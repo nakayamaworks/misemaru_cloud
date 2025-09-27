@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <?!= head ?>
+  <?!= commonJs ?>
+  <?!= commonCss ?>
+  <script>
+    const baseUrl = "<?= baseUrl ?>";
+  </script>
+  <title>🗓️ シフト設定</title>
+  <style>
+    .weekday-checkboxes .form-check {
+    min-width: 70px;
+  }
+
+  /* 横スクロールでも「スタッフ名」だけ固定 */
+  .table-sticky { border-collapse: separate; border-spacing: 0; }
+
+  /* 見出しの「スタッフ名」セル（1列目ヘッダ）を固定 */
+  .table-sticky thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 11;
+    background-color: var(--bs-table-bg, #f8f9fa);
+    background-clip: padding-box;
+    box-shadow: 2px 0 0 rgba(0,0,0,.06);
+  }
+
+  /* 本文1列目を固定 */
+  .table-sticky tbody td.sticky-staff {
+    position: sticky;
+    left: 0;
+    z-index: 10; /* 前面に固定 */
+    background-color: var(--bs-table-bg, #fff); 
+    background-clip: padding-box;
+    min-width: 8rem;
+    box-shadow: 2px 0 0 rgba(0,0,0,.04);
+  }
+
+  /* 同じスタッフの2行目以降は上ボーダー消して一体化 */
+  .table-sticky tbody td.sticky-staff.is-continued {
+    border-top-color: transparent !important;
+  }
+
+  /* 他セルは一段下げて衝突回避 */
+  .table-sticky th:not(:first-child),
+  .table-sticky td:not(:first-child) {
+    position: relative;
+    z-index: 1;
+  }
+
+  </style>
+</head>
+<body class="container-fluid py-3 loading">
+  <div id="loading" style="text-align:center; margin-top:50px;">
+    <div class="auth-spinner"></div>
+    <p>認証チェック中...</p>
+  </div>
+
+  <div id="app" style="display:none;">
+  <button type="button" class="btn btn-outline-secondary mb-2" onclick="goTo('20_staff_main_staff')">← 戻る</button>
+  <h4 class="text-center mb-3">🗓️ スタッフシフト設定</h4>
+  <div id="success-message" class="alert alert-success text-center" style="display: none;"></div>
+
+  <div id="main-content">
+    
+    <!-- 🧩 一覧表示 -->
+    <h5>📋 登録済みシフト履歴</h5>
+    <div class="table-wrapper mb-3">
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle table-sticky">
+          <thead class="table-light">
+            <tr>
+              <th>スタッフ名</th>
+              <th>開始日</th>
+              <th>開始時間</th>
+              <th>終了時間</th>
+              <th class="text-danger text-center">日</th>
+              <th class="text-center">月</th>
+              <th class="text-center">火</th>
+              <th class="text-center">水</th>
+              <th class="text-center">木</th>
+              <th class="text-center">金</th>
+              <th class="text-primary text-center">土</th>
+              <th>備考</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <!-- JSで埋め込み -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 🆕 ＋新規作成ボタン -->
+    <div class="form-wrapper mb-3">
+      <button id="toggleNewShiftFormBtn" class="btn btn-primary w-100" type="button">
+        ＋ 新規作成
+      </button>
+    </div>
+
+    <!-- 🆕 新規作成フォーム -->
+    <div class="collapse" id="newShiftForm">
+      
+      <!-- 🟢 小さくまとめるブロック -->
+      <div class="form-wrapper mb-3">
+        <h5>新規シフト登録</h5>
+        <!-- ✅ メッセージ -->
+        <div id="error-message" class="alert alert-danger text-center" style="display: none;"></div>
+
+        <!-- スタッフ＆開始日 -->
+        <div class="mb-3">
+          <label class="form-label">👤 スタッフ選択</label>
+          <select id="staffId" class="form-select">
+            <option value="">スタッフを選択してください</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">📅 適用開始日</label>
+          <input type="date" id="startDate" class="form-control">
+        </div>
+
+      </div>
+
+      <!-- 🟡 テーブルは広く -->
+      <div class="table-responsive px-2 mb-3">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>開始時間</th>
+              <th>終了時間</th>
+              <th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th>
+              <th>備考</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="shiftTableBody">
+            <!-- JSで埋め込み -->
+          </tbody>
+        </table>
+        <p class="text-muted small mt-0">※ ＋ で行追加、－ で削除できます</p>
+      </div>
+
+      <div class="form-wrapper d-grid gap-2">
+        <button class="btn btn-primary" id="saveBtn">登録</button>
+      </div>
+    </div>
+
+
+  </div>
+
+    
+  <!-- 🔄 初期表示ぐるぐる -->
+  <div id="global-spinner" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">読み込み中...</span>
+    </div>
+    <p class="mt-3">スタッフシフトを読み込んでいます…</p>
+  </div>
+
+  <!-- 🔄 保存中ぐるぐる -->
+  <div id="saving-spinner" class="text-center my-3" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">登録中...</span>
+    </div>
+    <p class="mt-2">スタッフシフトを保存しています…</p>
+  </div>
+
+  <!-- 🔄 保存中ぐるぐる -->
+  <div id="delete-spinner" class="text-center my-3" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">登録中...</span>
+    </div>
+    <p class="mt-2">スタッフシフトを削除しています…</p>
+  </div>
+
+  <!-- ✅ 保存確認モーダル -->
+  <div class="modal fade" id="confirmSaveModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">登録してもよろしいですか？</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="saveModalBody">
+          入力内容を登録します。よろしいですか？
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-primary" id="confirm-save-btn">登録</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ 削除確認モーダル -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">削除してもよろしいですか？</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="deleteModalBody">
+          このスタッフシフトを完全に削除します。よろしいですか？
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-btn">削除する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let shiftData = []; // 履歴一覧
+    let staffList = []; // スタッフマスタ
+    let deleteTarget = {};
+    let businessHours = [];
+    let isEditMode = false;
+    let oldStaffId = null;
+    let oldStartDate = null;
+    let originalLeaveData = null;
+    const prefillDate = '<?= date ?>';
+
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("[CHILD] DOMContentLoaded → child-ready を親へ送信");
+      try {
+        window.top.postMessage(
+          { type: "misemaru:child-ready", origin: location.origin },
+          "*" // 親側で必ず event.origin を検証するので安全
+        );
+      } catch (err) {
+        console.error("[CHILD] child-ready 送信失敗:", err);
+      }
+
+      // 初期化処理まとめ
+      initShiftTable();
+      initFormToggle();
+
+      // ✅ マスター読み込みが完了したら prefill 処理へ進む
+      loadMasterData(() => {
+        console.log("📦 マスター読み込み完了");
+
+        if (prefillDate) {
+          const collapseEl = document.getElementById("newShiftForm");
+          if (collapseEl) {
+            const collapse = bootstrap.Collapse.getOrCreateInstance(collapseEl);
+            collapse.show();
+            console.log("📂 フォームを展開しました");
+
+            // ✅ アニメーション後にスクロール（collapse完了後）
+            setTimeout(() => {
+              collapseEl.scrollIntoView({ behavior: "smooth", block: "start" });
+              console.log("🧭 自動スクロールしました");
+            }, 300); // collapse が終わるタイミングに合わせる
+          }
+
+          const dateInput = document.getElementById("startDate");
+          if (dateInput) {
+            dateInput.value = prefillDate;
+            console.log("🖊️ startDate に値をセット:", prefillDate);
+            dateInput.dispatchEvent(new Event("change")); // ここで営業設定描画もされる
+          } else {
+            console.warn("⚠️ startDate input が見つからない");
+          }
+        } else {
+          console.log("⛔ prefillDate が空です");
+        }
+      });
+      setupInputChangeHandlerStaffShift();
+    });
+
+
+
+
+    // トグル処理まとめ
+    function initFormToggle() {
+      const toggleBtn = document.getElementById("toggleNewShiftFormBtn");
+      const formEl = document.getElementById("newShiftForm");
+      const collapse = new bootstrap.Collapse(formEl, { toggle: false });
+
+      toggleBtn.addEventListener("click", () => {
+        const isVisible = formEl.classList.contains("show");
+        if (isVisible) {
+          collapse.hide();
+          toggleBtn.textContent = "＋ 新規作成";
+        } else {
+          // ✅ 押したときにフォーム初期化
+          clearForm();
+          setNewModeSnapshot();
+          isEditMode = false;
+          document.getElementById("saveBtn").textContent = "登録";
+          initShiftTable();
+          collapse.show();
+          toggleBtn.textContent = "− 閉じる";
+          setTimeout(() => {
+            formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 300);
+        }
+      });
+    }
+
+
+    function renderShiftTable(businessRows) {
+      const tbody = document.getElementById("shiftTableBody");
+      tbody.innerHTML = "";
+
+      businessRows.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="time" class="form-control" name="start-${i}" value="${row.startTime}"></td>
+          <td><input type="time" class="form-control" name="end-${i}" value="${row.endTime}"></td>
+          ${["sun", "mon", "tue", "wed", "thu", "fri", "sat"].map(day => `
+            <td class="text-center">
+              <input class="form-check-input" type="checkbox" name="${day}-${i}" ${row.weekdays[day] ? "checked" : ""}>
+            </td>
+          `).join("")}
+          <td><input type="text" class="form-control" name="note-${i}" value=""></td>
+          <td>
+            <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-0" onclick="insertRow(${i})">＋</button>
+            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-0" onclick="deleteRow(this)">－</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+
+    // マスタデータ・履歴の取得まとめ
+    function loadMasterData(callback) {
+      document.getElementById("main-content").style.display = "none";
+      document.getElementById("global-spinner").style.display = "block";
+
+      google.script.run.withSuccessHandler(({ staffList, shiftList, businessHourList }) => {
+        businessHours = businessHourList;
+        renderStaffOptions(staffList);
+        renderHistory(shiftList);
+
+        document.getElementById("global-spinner").style.display = "none";
+        document.getElementById("main-content").style.display = "block";
+
+        // ✅ コールバックが指定されていれば実行
+        if (typeof callback === "function") {
+          callback();
+        }
+      }).getInitialStaffSchedule();
+    }
+
+
+    document.getElementById("startDate").addEventListener("change", () => {
+      const dateStr = document.getElementById("startDate").value;
+      if (!dateStr) return;
+
+      const businessRows = getBusinessHoursForDateFromCache(dateStr);
+      renderShiftTable(businessRows);  // 既存のテーブル描画関数
+    });
+
+
+
+    // ✅ 登録ボタン → モーダル表示
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const staffId = document.getElementById("staffId").value;
+      const staffName = staffList.find(s => s.id === staffId)?.name || "";
+      const startDate = document.getElementById("startDate").value;
+
+      if (!staffId || !startDate) {
+        showMessage("⚠ スタッフ・開始日は必須です", true);
+        return;
+      }
+
+      // ✅ 文言切替
+      const actionText = isEditMode ? "更新" : "登録";
+
+      document.getElementById("saveModalBody").innerHTML =
+        `スタッフ：<strong>${staffName}</strong><br>適用開始日：<strong>${startDate}</strong><br><br>この内容で<strong>${actionText}</strong>します。よろしいですか？`;
+
+      document.querySelector("#confirmSaveModal .modal-title").textContent = `${actionText}してもよろしいですか？`;
+      document.getElementById("confirm-save-btn").textContent = actionText;
+
+      const modal = new bootstrap.Modal(document.getElementById("confirmSaveModal"));
+      modal.show();
+    });
+
+
+    // ✅ モーダルで保存確定
+    document.getElementById("confirm-save-btn").addEventListener("click", () => {
+      const staffId = document.getElementById("staffId").value;
+      const startDate = document.getElementById("startDate").value;
+
+      // ✅ テーブルから rows を作る
+      const rows = [];
+      const tbody = document.getElementById("shiftTableBody");
+      [...tbody.querySelectorAll("tr")].forEach((tr, i) => {
+        const start = tr.querySelector(`input[name="start-${i}"]`).value;
+        const end = tr.querySelector(`input[name="end-${i}"]`).value;
+        const note = tr.querySelector(`input[name="note-${i}"]`).value;
+
+        const weekdays = {};
+        ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].forEach(day => {
+          weekdays[day] = tr.querySelector(`input[name="${day}-${i}"]`).checked;
+        });
+
+        rows.push({
+          start,
+          end,
+          type: "出勤",  // 種類は固定「出勤」
+          note,
+          ...weekdays
+        });
+      });
+
+      // ✅ 送信データまとめ
+      const payload = {
+        staffId,
+        startDate,
+        oldStaffId,
+        oldStartDate,
+        rows: rows,
+      };
+
+      if (!validateSafeInputs(payload)) {
+        alert("❌ 入力内容に不正なタグが含まれています。");
+        return;
+      }
+
+      const modal = bootstrap.Modal.getInstance(document.getElementById("confirmSaveModal"));
+      modal.hide();
+
+      document.getElementById("main-content").style.display = "none";
+      const savingSpinner = document.getElementById("saving-spinner");
+      savingSpinner.querySelector("p").textContent = isEditMode
+        ? "スタッフシフトを更新しています…"
+        : "スタッフシフトを保存しています…";
+      savingSpinner.style.display = "block";
+
+      // ✅ 登録
+
+      
+      google.script.run
+        .withSuccessHandler(() => {
+          clearForm();
+          setNewModeSnapshot();
+          google.script.run.withSuccessHandler(history => {
+            renderHistory(history);
+            setTimeout(() => {
+              document.getElementById("saving-spinner").style.display = "none";
+              document.getElementById("main-content").style.display = "block";
+              showMessage(`✅ ${isEditMode ? "更新" : "登録"}完了！`);
+
+              // ✅ prefillDate があるならフォーム再表示＆日付再セット
+              if (prefillDate) {
+                const formEl = document.getElementById("newShiftForm");
+                const collapse = bootstrap.Collapse.getInstance(formEl) || new bootstrap.Collapse(formEl, { toggle: false });
+                collapse.show();
+
+                const dateInput = document.getElementById("startDate");
+                dateInput.value = prefillDate;
+                dateInput.dispatchEvent(new Event("change"));
+
+                setTimeout(() => {
+                  formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 300);
+              } else {
+                // 通常通り閉じる
+                const formEl = document.getElementById("newShiftForm");
+                const collapse = bootstrap.Collapse.getInstance(formEl) || new bootstrap.Collapse(formEl, { toggle: false });
+                collapse.hide();
+                document.getElementById("toggleNewShiftFormBtn").textContent = "＋ 新規作成";
+              }
+            }, 50);
+          }).getStaffSchedule();
+        })
+        .withFailureHandler(e => {
+          document.getElementById("saving-spinner").style.display = "none";
+          document.getElementById("main-content").style.display = "block";
+          showMessage("❌ 保存エラー：" + e.message, true);
+        })
+        .saveStaffSchedule(payload);
+    });
+
+
+    // ✅ 削除ボタン（一覧のボタンから呼ばれる）
+    function deleteShift(staffId, startDate) {
+      deleteTarget = { staffId, startDate };
+      const staffName = staffList.find(s => s.id === staffId)?.name || "";
+
+      document.getElementById("deleteModalBody").innerHTML =
+        `スタッフ：<strong>${staffName}</strong><br>適用開始日：<strong>${startDate}</strong><br><br>このスタッフシフトを削除します。よろしいですか？`;
+
+      const modal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+      modal.show();
+    }
+
+    document.getElementById("confirm-delete-btn").addEventListener("click", () => {
+      const { staffId, startDate } = deleteTarget;
+      const modal = bootstrap.Modal.getInstance(document.getElementById("confirmDeleteModal"));
+      modal.hide();
+
+      // 🔄 スピナー表示
+      document.getElementById("main-content").style.display = "none";
+      document.getElementById("delete-spinner").style.display = "block";
+
+      google.script.run
+      .withSuccessHandler(() => {
+        // ✅ 削除成功 → 再取得
+        google.script.run.withSuccessHandler(history => {
+          renderHistory(history);
+          setTimeout(() => {
+            document.getElementById("delete-spinner").style.display = "none";
+            document.getElementById("main-content").style.display = "block";
+            showMessage("🗑 削除しました");
+          }, 50);
+        }).getStaffSchedule();
+      })
+      .withFailureHandler(e => {
+        showMessage("❌ 削除失敗：" + e.message, true);
+        document.getElementById("delete-spinner").style.display = "none";
+        document.getElementById("main-content").style.display = "block";
+      })
+      .deleteStaffSchedule(staffId, startDate);
+
+    });
+
+    // ✅ 履歴表示
+    function renderHistory(data) {
+      shiftData = data;
+      const tbody = document.getElementById("historyTableBody");
+      tbody.innerHTML = "";
+
+      const grouped = {};
+      data.forEach(item => {
+        const key = `${item.startDate}_${item.staffId}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(item);
+      });
+
+      let colorToggle = false;
+
+      Object.keys(grouped).forEach(groupKey => {
+        const rows = grouped[groupKey];
+        const rowspan = rows.length;
+        const rowClass = colorToggle ? "table-light" : "";
+
+        rows.forEach((item, idx) => {
+          const tr = document.createElement("tr");
+          tr.className = rowClass;
+
+          const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].map(d =>
+            item.weekdays[d] ? "✅" : "休"
+          );
+
+          tr.innerHTML = `
+            <td class="sticky-staff ${idx > 0 ? 'is-continued' : ''}">
+              ${idx === 0 ? item.staffName : ""}
+            </td>
+            <td ${idx > 0 ? 'is-continued' : ''}">
+              ${idx === 0 ? item.startDate : ""}
+            </td>
+            <td>${item.startTime}</td>
+            <td>${item.endTime}</td>
+            <td class="text-center">${days[0]}</td>
+            <td class="text-center">${days[1]}</td>
+            <td class="text-center">${days[2]}</td>
+            <td class="text-center">${days[3]}</td>
+            <td class="text-center">${days[4]}</td>
+            <td class="text-center">${days[5]}</td>
+            <td class="text-center">${days[6]}</td>
+            <td>${item.note || ""}</td>
+            ${idx === 0 ? `
+              <td rowspan="${rowspan}">
+                <button class="btn btn-sm btn-warning me-1" onclick="editShift('${item.startDate}', '${item.staffId}')">編集</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteShift('${item.staffId}', '${item.startDate}')">削除</button>
+              </td>
+            ` : ""}
+          `;
+          tbody.appendChild(tr);
+        });
+
+        colorToggle = !colorToggle;
+      });
+    }
+
+    function getBusinessHoursForDateFromCache(dateStr) {
+      const targetYmd = dateStr;
+
+      const applicable = businessHours
+        .filter(row => row.applyDate <= targetYmd)
+        .sort((a, b) => b.applyDate.localeCompare(a.applyDate));
+
+      if (!applicable.length) return [];
+
+      const latestApplyDate = applicable[0].applyDate;
+
+      return businessHours
+        .filter(row => row.applyDate === latestApplyDate)
+        .filter(row => row.type === "営業");
+    }
+
+
+    function editShift(startDate, staffId) {
+      isEditMode = true;
+      document.getElementById("saveBtn").textContent = "更新";
+
+      oldStaffId = staffId;
+      oldStartDate = startDate;
+
+      const targetRows = shiftData.filter(row => row.startDate === startDate && row.staffId === staffId);
+      if (!targetRows.length) {
+        alert("該当データが見つかりません");
+        return;
+      }
+
+      document.getElementById("staffId").value = targetRows[0].staffId;
+      document.getElementById("startDate").value = targetRows[0].startDate;
+
+      const tbody = document.getElementById("shiftTableBody");
+      tbody.innerHTML = "";
+
+      targetRows.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="time" class="form-control" name="start-${i}" value="${row.startTime}"></td>
+          <td><input type="time" class="form-control" name="end-${i}" value="${row.endTime}"></td>
+          ${["sun", "mon", "tue", "wed", "thu", "fri", "sat"].map(d => `
+            <td class="text-center">
+              <input class="form-check-input" type="checkbox" name="${d}-${i}" ${row.weekdays[d] ? "checked" : ""}>
+            </td>
+          `).join("")}
+          <td><input type="text" class="form-control" name="note-${i}" value="${row.note || ""}"></td>
+          <td>
+            <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-0" onclick="insertRow(${i})">＋</button>
+            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-0" onclick="deleteRow(this)">－</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 開く
+      const formEl = document.getElementById("newShiftForm");
+      const collapse = bootstrap.Collapse.getInstance(formEl) || new bootstrap.Collapse(formEl, { toggle: false });
+      collapse.show();
+        setTimeout(() => {
+          formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 300);
+      afterEditShiftHookForSnapshot();
+    }
+
+    // ✅ フォーム初期化
+    function clearForm() {
+      document.getElementById("staffId").value = "";
+      document.getElementById("startDate").value = "";
+      const tbody = document.getElementById("shiftTableBody");
+      tbody.innerHTML = "";  // ← シフト初期化
+    }
+
+
+    // ✅ メッセージ表示
+    function showMessage(msg, isError = false) {
+      const success = document.getElementById("success-message");
+      const error = document.getElementById("error-message");
+      success.style.display = "none";
+      error.style.display = "none";
+
+      const target = isError ? error : success;
+      target.textContent = msg;
+      target.style.display = "block";
+      setTimeout(() => (target.style.display = "none"), 4000);
+    }
+
+    function renderStaffOptions(data) {
+      const select = document.getElementById("staffId");
+      staffList = data;
+
+      // 初期化（いったん空にする）
+      select.innerHTML = '<option value="">スタッフを選択してください</option>';
+
+      // スタッフ一覧を追加
+      data.forEach(staff => {
+        const opt = document.createElement("option");
+        opt.value = staff.id;
+        opt.textContent = `${staff.id}：${staff.name}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function createShiftRow(index) {
+      const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+      let dayCheckboxes = days.map(d => `
+        <td class="text-center">
+          <input class="form-check-input" type="checkbox" name="${d}-${index}">
+        </td>
+      `).join("");
+
+      return `
+        <tr>
+          <td><input type="time" class="form-control" name="start-${index}"></td>
+          <td><input type="time" class="form-control" name="end-${index}"></td>
+          ${dayCheckboxes}
+          <td><input type="text" class="form-control" name="note-${index}"></td>
+          <td>
+            <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-0" onclick="insertRow(${index})">＋</button>
+            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-0" onclick="deleteRow(this)">－</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    function insertRow(position) {
+      const tbody = document.getElementById("shiftTableBody");
+      const newRow = document.createElement("tr");
+      const rowIndex = tbody.children.length;
+      newRow.innerHTML = createShiftRow(rowIndex);
+      tbody.insertBefore(newRow, tbody.children[position + 1] || null);
+      notifyFormMutated();
+    }
+
+    function deleteRow(button) {
+      const row = button.closest("tr");
+      const tbody = document.getElementById("shiftTableBody");
+      tbody.removeChild(row);
+      notifyFormMutated();
+    }
+
+    function initShiftTable() {
+      const tbody = document.getElementById("shiftTableBody");
+      tbody.innerHTML = "";
+      insertRow(-1);
+    }
+
+  // ===== 1) スナップショット（現在値）作成 =====
+  function serializeCurrentShiftForm() {
+    const staffId = document.getElementById("staffId")?.value || "";
+    const startDate = document.getElementById("startDate")?.value || "";
+
+    const tbody = document.getElementById("shiftTableBody");
+    const rows = [];
+    [...tbody.querySelectorAll("tr")].forEach((tr, i) => {
+      const start = tr.querySelector(`input[name="start-${i}"]`)?.value || "";
+      const end   = tr.querySelector(`input[name="end-${i}"]`)?.value || "";
+      const note  = tr.querySelector(`input[name="note-${i}"]`)?.value?.trim() || "";
+
+      const weekdays = {};
+      ["sun","mon","tue","wed","thu","fri","sat"].forEach(d=>{
+        weekdays[d] = !!tr.querySelector(`input[name="${d}-${i}"]`)?.checked;
+      });
+
+      rows.push({ start, end, weekdays, note });
+    });
+
+    // 並び順によるブレを減らすため、安定キーでソートしておく
+    const sorted = rows.slice().sort((a,b)=>{
+      const ka = `${a.start}|${a.end}|${["sun","mon","tue","wed","thu","fri","sat"].map(d=>a.weekdays[d]?"1":"0").join("")}|${a.note}`;
+      const kb = `${b.start}|${b.end}|${["sun","mon","tue","wed","thu","fri","sat"].map(d=>b.weekdays[d]?"1":"0").join("")}|${b.note}`;
+      return ka.localeCompare(kb);
+    });
+
+    return { staffId, startDate, rows: sorted };
+  }
+
+  // 深い比較（JSON化で十分）
+  function isEqualSnapshot(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  // ===== 2) 変更監視とボタン活性/非活性制御 =====
+  function setupInputChangeHandlerStaffShift() {
+    const formEl = document.getElementById("newShiftForm");
+    const saveBtn = document.getElementById("saveBtn");
+    if (!formEl || !saveBtn) return;
+
+    const update = () => {
+      // 新規のときは originalLeaveData=null が自然
+      if (!originalLeaveData) {
+        const cur = serializeCurrentShiftForm();
+        // 必須: staffId, startDate と、最低1行で開始/終了/曜日のいずれか入力があるか
+        const hasAnyRowFilled = (cur.rows || []).some(r =>
+          r.start || r.end || Object.values(r.weekdays).some(Boolean) || r.note
+        );
+        saveBtn.disabled = !(cur.staffId && cur.startDate && hasAnyRowFilled);
+      } else {
+        // 編集のときは完全差分比較でOK
+        const cur = serializeCurrentShiftForm();
+        saveBtn.disabled = isEqualSnapshot(cur, originalLeaveData);
+      }
+    };
+
+    // 入力全般（動的追加した行にも効くようにフォームにデリゲート）
+    formEl.addEventListener("input", update);
+    formEl.addEventListener("change", update);
+
+    // 初期状態も評価
+    update();
+  }
+
+  // ===== 3) 行追加/削除の最後にセーブ状態再評価 =====
+  function notifyFormMutated() {
+    const formEl = document.getElementById("newShiftForm");
+    // まとめて1回だけ状態更新（inputイベントを自発的に飛ばす）
+    if (formEl) formEl.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  // ===== 4) “元データ”のセット箇所 =====
+  // - 新規開始時: originalLeaveData = null;（saveBtnは上のロジックで制御）
+  // - 編集開始直後（editShift の末尾）: 現在描画済みフォームをスナップショットして格納
+
+  // ★ editShift の最後に追加（フォーム展開＆スクロールの直後あたり）
+  function afterEditShiftHookForSnapshot(){
+    // 少し遅延してDOM反映後に撮る
+    setTimeout(()=>{
+      originalLeaveData = serializeCurrentShiftForm();
+      notifyFormMutated(); // ボタン状態を即反映
+    }, 0);
+  }
+
+  // ★ 新規作成を開いた直後は “新規モード” として元データを破棄
+  function setNewModeSnapshot() {
+    originalLeaveData = null;
+    notifyFormMutated();
+  }
+
+  function hasFormChangedStaffShift() {
+    if (!originalLeaveData) {
+      const cur = serializeCurrentShiftForm();
+      const hasAnyRowFilled = (cur.rows || []).some(r =>
+        r.start || r.end || Object.values(r.weekdays).some(Boolean) || r.note
+      );
+      return !!(cur.staffId && cur.startDate && hasAnyRowFilled);
+    }
+    return !isEqualSnapshot(serializeCurrentShiftForm(), originalLeaveData);
+  }
+
+  </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+</body>
+</html>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <?!= head ?>
+  <?!= commonJs ?>
+  <?!= commonCss ?>
+  <script>
+    const baseUrl = "<?= baseUrl ?>";
+  </script>
+  <title>🧑‍💼 スタッフ登録</title>
+  <style>
+    .btn-register-wrapper {
+    max-width: 440px;
+    margin: auto;
+  }
+
+  .weekdays label {
+    margin-right: 0.5rem;
+  }
+
+  </style>
+</head>
+<body class="container-fluid py-3 loading">
+  <div id="loading" style="text-align:center; margin-top:50px;">
+    <div class="auth-spinner"></div>
+    <p>認証チェック中...</p>
+  </div>
+  <div id="app" style="display:none;">
+
+  <button type="button" class="btn btn-outline-secondary mb-2" onclick="goTo('20_staff_main_staff')">← 戻る</button>
+  <h4 class="text-center mb-1">🧑‍💼 スタッフ登録</h4>
+
+  <!-- 🔄 初期読み込みスピナー -->
+  <div id="init-spinner" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">読み込み中...</span>
+    </div>
+    <p class="mt-3">スタッフ一覧を読み込み中です…</p>
+  </div>
+
+  <!-- 🔄 保存中スピナー -->
+  <div id="saving-spinner" class="text-center my-3" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">保存中...</span>
+    </div>
+    <p class="mt-2">保存しています…</p>
+  </div>
+
+  <!-- 🔄 削除中スピナー -->
+  <div id="deleting-spinner" class="text-center my-3" style="display: none;">
+    <div class="spinner-border text-danger" role="status">
+      <span class="visually-hidden">削除中...</span>
+    </div>
+    <p class="mt-2">削除しています…</p>
+  </div>
+
+  <div id="main-content" style="display: none;">
+    <!-- 登録済みスタッフ 一覧（ここは後ほどJSで動的に生成） -->
+    <div id="staffListArea" class="mb-0">
+      <h5>登録済みスタッフ</h5>
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>名前</th>
+              <th>性別</th>
+              <th>役職</th>
+              <th>担当</th>
+              <th>メール</th>
+              <th>通知</th>
+              <th>備考</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="staffTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ＋新規作成ボタン -->
+    <div class="form-wrapper mb-3">
+      <button id="toggleFormBtn" class="btn btn-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#staffForm" aria-expanded="false" aria-controls="staffForm">
+        ＋ 新規作成
+      </button>
+    </div>
+
+    <!-- 登録フォーム -->
+    <div class="collapse" id="staffForm">
+       <div class="form-wrapper">
+        <h5 class="mb-2 mt-0">スタッフ登録フォーム</h5>
+        <!-- エラーメッセージ -->
+        <div id="formErrorMsg" class="alert alert-danger py-2 px-3 my-2" style="display: none;"></div>
+
+        <input type="hidden" id="staffId" />
+        <div class="mb-3">
+          <label class="form-label">名前</label>
+          <input type="text" class="form-control" id="staffName" required />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">性別 <span class="text-muted">(任意)</span></label>
+          <select class="form-select" id="staffGender">
+            <option value="">未回答</option>
+            <option value="男性">男性</option>
+            <option value="女性">女性</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">役職</label>
+          <input type="text" class="form-control" id="staffPosition" />
+        </div>
+
+        <!-- 担当サービス（チェックボックス） -->
+        <div class="mb-3">
+          <label class="form-label">担当サービス</label>
+          <div id="assignedServiceContainer" class="border rounded p-2 bg-white" style="max-height: 200px; overflow-y: auto;">
+            <!-- ここに読み込みスピナーやサービスリストが動的に入る -->
+            <div id="service-loading-spinner" class="text-center my-2">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">読み込み中...</span>
+              </div>
+              <p class="mt-2 mb-0 text-muted">サービス情報を読み込み中です…</p>
+            </div>
+          </div>
+          <small class="text-muted">※担当するサービスにチェックを入れてください（複数可）</small>
+        </div>
+
+
+        <div class="mb-3">
+          <label class="form-label">メールアドレス <span class="text-muted">(任意)</span></label>
+          <input type="email" class="form-control" id="staffEmail" placeholder="example@example.com" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">通知設定</label>
+          <select class="form-select" id="staffNotification">
+            <option value="ON">ON（通知を受け取る）</option>
+            <option value="OFF" selected>OFF（通知なし）</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">備考</label>
+          <textarea class="form-control" id="staffNote" rows="2"></textarea>
+        </div>
+
+        <div class="d-grid btn-register-wrapper">
+          <button class="btn btn-primary w-100" id="submitBtn" onclick="openConfirmModal()" disabled>登録</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 登録確認モーダル -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">この内容で登録してよろしいですか？</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="modal-body-text">内容確認中...</div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+            <button class="btn btn-primary" id="confirm-register-btn">登録</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ 削除確認モーダル -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">このスタッフを削除してよろしいですか？</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="delete-modal-body">スタッフ情報を削除します。</div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+            <button type="button" class="btn btn-danger" id="confirm-delete-btn">削除する</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>  
+
+
+  <script>
+    let deleteTargetId = null;
+    let collapseInstance = null;
+    let cachedServiceList = null;
+    
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("[CHILD] DOMContentLoaded → child-ready を親へ送信");
+      try {
+        window.top.postMessage(
+          { type: "misemaru:child-ready", origin: location.origin },
+          "*" // 親側で必ず event.origin を検証するので安全
+        );
+      } catch (err) {
+        console.error("[CHILD] child-ready 送信失敗:", err);
+      }
+
+      // ✅ 登録モーダル
+      const confirmBtn = document.getElementById("confirm-register-btn");
+      if (confirmBtn) {
+        confirmBtn.addEventListener("click", () => {
+          const modalEl = document.getElementById("confirmModal");
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+
+          saveStaff();  // 保存実行
+        });
+      }
+
+      // ✅ 削除モーダル
+      const deleteBtn = document.getElementById("confirm-delete-btn");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", () => {
+          if (!deleteTargetId) return;
+
+          document.getElementById("deleting-spinner").style.display = "block";
+          document.getElementById("main-content").style.display = "none";
+
+          const modalEl = document.getElementById("deleteModal");
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+
+          google.script.run
+            .withSuccessHandler(() => {
+              deleteTargetId = null;
+              google.script.run.withSuccessHandler((list) => {
+                renderStaffList(list);
+                document.getElementById("deleting-spinner").style.display = "none";
+                document.getElementById("main-content").style.display = "block";
+
+                collapseInstance?.hide();
+                resetForm();
+                
+              }).getStaffList();
+            })
+            .deleteStaff(deleteTargetId);
+        });
+      }
+
+      // ✅ Collapse（フォーム開閉）
+      const btnEl = document.getElementById("toggleFormBtn");
+      const formEl = document.getElementById("staffForm");
+
+      if (!collapseInstance) {
+        collapseInstance = new bootstrap.Collapse(formEl, { toggle: false });
+      }
+
+      btnEl.addEventListener("click", () => {
+        const isVisible = formEl.classList.contains("show");
+
+        if (isVisible) {
+          collapseInstance.hide();
+        } else {
+          collapseInstance.show();
+          setTimeout(() => {
+            formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 300);
+        }
+      });
+
+      formEl.addEventListener("show.bs.collapse", () => {
+        btnEl.textContent = "− 閉じる";
+      });
+
+      formEl.addEventListener("hide.bs.collapse", () => {
+        btnEl.textContent = "＋ 新規作成";
+        resetForm();
+      });
+
+      //入力欄・チェックボックス変更時に validateForm 呼ぶ
+      ["staffName", "staffGender", "staffEmail", "staffNotification", "staffPosition", "staffNote"].forEach(id => {
+        document.getElementById(id).addEventListener("input", validateForm);
+      });
+      document.getElementById("assignedServiceContainer").addEventListener("change", validateForm);
+
+    });
+
+
+
+    window.onload = function () {
+      google.script.run.withSuccessHandler((list) => {
+        renderStaffList(list);
+        document.getElementById("init-spinner").style.display = "none";
+        document.getElementById("main-content").style.display = "block";
+      }).getStaffList();
+
+      google.script.run.withSuccessHandler(serviceList => {
+        cachedServiceList = serviceList;
+        renderServiceList(serviceList);
+      }).getServiceList();
+    };
+
+    function renderStaffList(data) {
+      const tbody = document.getElementById("staffTableBody");
+      tbody.innerHTML = "";
+
+      if (!Array.isArray(data) || data.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 8;
+        td.className = "text-center";
+        td.textContent = "登録されたスタッフがいません";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      data.forEach((item, i) => {
+        const tr = document.createElement("tr");
+
+        const createTd = (text) => {
+          const td = document.createElement("td");
+          td.textContent = text || "-";
+          return td;
+        };
+
+        tr.appendChild(createTd(item.name));
+        tr.appendChild(createTd(item.gender));
+        tr.appendChild(createTd(item.position));
+        tr.appendChild(createTd(item.assignedServices));
+        tr.appendChild(createTd(item.email));
+        tr.appendChild(createTd(item.notification));
+        tr.appendChild(createTd(item.note));
+
+        const actionTd = document.createElement("td");
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn btn-sm btn-warning";
+        editBtn.textContent = "編集";
+        editBtn.onclick = () => editStaff(i);
+        actionTd.appendChild(editBtn);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn btn-sm btn-danger";
+        deleteBtn.textContent = "削除";
+        deleteBtn.onclick = () => deleteStaff(item.id);
+        actionTd.appendChild(deleteBtn);
+
+        tr.appendChild(actionTd);
+        tbody.appendChild(tr);
+      });
+
+
+      // 👉 ここで staffData にサービスIDも保持しておく
+      window.staffData = data.map(d => ({
+        ...d,
+        assignedServiceIds: d.assignedServiceIds || [], // ← これスプレッドシート側から取る
+      }));
+    }
+
+
+    function renderServiceList(serviceList) {
+      const container = document.getElementById("assignedServiceContainer");
+      container.innerHTML = ""; // 初期化
+
+      if (!Array.isArray(serviceList) || serviceList.length === 0) {
+        container.innerHTML = "<div>サービスが登録されていません</div>";
+        return;
+      }
+
+      serviceList.forEach(service => {
+        const div = document.createElement("div");
+        div.className = "form-check";
+
+        const checkbox = document.createElement("input");
+        checkbox.className = "form-check-input";
+        checkbox.type = "checkbox";
+        checkbox.id = `service-${service.id}`;
+        checkbox.value = service.id;
+        checkbox.name = "assignedService";
+
+        const label = document.createElement("label");
+        label.className = "form-check-label";
+        label.htmlFor = `service-${service.id}`;
+        label.textContent = service.name;
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        container.appendChild(div);
+      });
+    }
+
+    function getFormData() {
+      return {
+        id: document.getElementById("staffId").value,
+        name: document.getElementById("staffName").value,
+        gender: document.getElementById("staffGender").value,
+        email: document.getElementById("staffEmail").value,
+        notification: document.getElementById("staffNotification").value,
+        position: document.getElementById("staffPosition").value,
+        // role: 削除
+        note: document.getElementById("staffNote").value,
+        assignedServiceIds: Array.from(document.querySelectorAll('input[name="assignedService"]:checked')).map(cb => cb.value)
+      };
+    }
+
+    function saveStaff() {
+      const data = getFormData();
+      const isEdit = !!data.id;
+
+      // ✅ サニタイズチェック
+      if (!validateSafeInputs(data)) {
+        alert("❌ 入力内容に不正なタグが含まれています。");
+        return;
+      }
+
+      // 🔁 表示切り替え：保存中スピナーを表示
+      document.getElementById("saving-spinner").style.display = "block";
+      document.querySelector("#saving-spinner p").textContent = isEdit ? "更新しています…" : "登録しています…";
+      document.getElementById("main-content").style.display = "none";
+
+      google.script.run
+        .withSuccessHandler(() => {
+          google.script.run.withSuccessHandler((list) => {
+            renderStaffList(list);
+            collapseInstance?.hide();
+            resetForm();
+
+            // 🔁 表示復帰
+            document.getElementById("saving-spinner").style.display = "none";
+            document.getElementById("main-content").style.display = "block";
+          }).getStaffList();
+        })
+        .saveStaff(data);
+    }
+
+    function openConfirmModal() {
+      const name = document.getElementById("staffName").value.trim();
+      const gender = document.getElementById("staffGender").value.trim();
+      const email = document.getElementById("staffEmail").value.trim();
+      const notification = document.getElementById("staffNotification").value;
+      const errorEl = document.getElementById("formErrorMsg");
+
+      // ✅ バリデーションチェック
+      let errorMsg = "";
+      if (!name) errorMsg = "名前を入力してください。";
+      else if (notification === "ON" && !email) errorMsg = "通知ONの場合、メールアドレスは必須です。";
+      else if (email && !/^[\w\-.]+@[\w\-.]+\.\w+$/.test(email)) errorMsg = "メールアドレスの形式が正しくありません。";
+
+      if (errorMsg) {
+        errorEl.textContent = errorMsg;
+        errorEl.style.display = "block";
+        return;
+      } else {
+        errorEl.style.display = "none";
+      }
+
+      const isEdit = !!document.getElementById("staffId").value;
+      const newData = getFormData();
+      const oldData = editingStaffIndex !== null ? staffData[editingStaffIndex] : null;
+
+      const modalTitle = document.querySelector("#confirmModal .modal-title");
+      modalTitle.textContent = isEdit ? "この内容で更新してよろしいですか？" : "この内容で登録してよろしいですか？";
+
+      const confirmBtn = document.getElementById("confirm-register-btn");
+      confirmBtn.textContent = isEdit ? "更新" : "登録";
+
+      const modalBody = document.getElementById("modal-body-text");
+      modalBody.innerHTML = "";
+
+      const ul = document.createElement("ul");
+      ul.className = "list-group list-group-flush";
+
+      const createLi = (label, oldVal, newVal) => {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+        const changed = oldData && oldVal !== newVal;
+        if (changed) li.classList.add("text-danger", "fw-bold");
+
+        const text = oldData
+          ? `${oldVal || "-"} → ${newVal || "-"}`
+          : `${newVal || "-"}`;
+        li.textContent = `${label}：${text}`;
+        return li;
+      };
+
+      ul.appendChild(createLi("名前", oldData?.name, newData.name));
+      ul.appendChild(createLi("性別", oldData?.gender, newData.gender));
+      ul.appendChild(createLi("役職", oldData?.position, newData.position));
+      ul.appendChild(createLi("メールアドレス", oldData?.email, newData.email));
+      ul.appendChild(createLi("通知設定", oldData?.notification, newData.notification));
+      ul.appendChild(createLi("備考", oldData?.note, newData.note));
+
+      // ✅ 担当サービス
+      const newServices = Array.from(document.querySelectorAll('input[name="assignedService"]:checked'))
+        .map(cb => cb.nextSibling.textContent.trim());
+      const newServiceText = newServices.join("、");
+
+      const serviceLi = document.createElement("li");
+      serviceLi.className = "list-group-item";
+      if (oldData) {
+        const oldServiceText = oldData.assignedServices || "-";
+        const changed = oldServiceText !== newServiceText;
+        if (changed) serviceLi.classList.add("text-danger", "fw-bold");
+        serviceLi.textContent = `担当サービス：${oldServiceText} → ${newServiceText || "-"}`;
+      } else {
+        serviceLi.textContent = `担当サービス：${newServiceText || "-"}`;
+      }
+      ul.appendChild(serviceLi);
+
+      modalBody.appendChild(ul);
+
+      new bootstrap.Modal(document.getElementById("confirmModal")).show();
+    }
+
+    window.editingStaffIndex = null;
+
+    function editStaff(index) {
+      const data = staffData[index];
+      window.editingStaffIndex = index;
+      if (!data) return;
+
+      document.getElementById("staffId").value = data.id;
+      document.getElementById("staffName").value = data.name;
+      document.getElementById("staffGender").value = data.gender || "";
+      document.getElementById("staffEmail").value = data.email || "";
+      document.getElementById("staffNotification").value = data.notification || "OFF";
+      document.getElementById("staffPosition").value = data.position || "";
+      document.getElementById("staffNote").value = data.note || "";
+
+      // ✅ 再描画 ＆ チェック反映（キャッシュ利用）
+      renderServiceList(cachedServiceList);
+      document.querySelectorAll('input[name="assignedService"]').forEach(cb => cb.checked = false);
+      (data.assignedServiceIds || []).forEach(serviceId => {
+        const cb = document.getElementById(`service-${serviceId}`);
+        if (cb) cb.checked = true;
+      });
+
+      // Collapse 開く処理はそのまま
+      const formEl = document.getElementById("staffForm");
+      if (!collapseInstance) {
+        collapseInstance = new bootstrap.Collapse(formEl, { toggle: false });
+      }
+
+      if (!formEl.classList.contains("show")) {
+        formEl.addEventListener("shown.bs.collapse", function handler() {
+          formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          formEl.removeEventListener("shown.bs.collapse", handler);
+        });
+        collapseInstance.show();
+      } else {
+        formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      updateSubmitButtonText();
+      validateForm();
+    }
+
+
+
+    function deleteStaff(staffId) {
+      deleteTargetId = staffId;
+
+      // 名前表示（任意で表示名があれば）
+      const target = staffData.find(s => s.id === staffId);
+      const name = target ? target.name : "このスタッフ";
+
+      document.getElementById("delete-modal-body").innerHTML = `
+        <div>スタッフ：<strong>${name}</strong><br>を削除してもよろしいですか？</div>
+      `;
+
+      const modal = new bootstrap.Modal(document.getElementById("deleteModal"));
+      modal.show();
+    }
+
+    function resetForm() {
+      document.getElementById("staffId").value = "";
+      document.getElementById("staffName").value = "";
+      document.getElementById("staffGender").value = "";
+      document.getElementById("staffEmail").value = "";
+      document.getElementById("staffNotification").value = "OFF";
+      document.getElementById("staffPosition").value = "";
+      document.getElementById("staffNote").value = "";
+      editingStaffIndex = null;
+
+      // ✅ 担当サービスのチェックを全部外す
+      document.querySelectorAll('input[name="assignedService"]').forEach(cb => cb.checked = false);
+      updateSubmitButtonText();
+      document.getElementById("formErrorMsg").style.display = "none";
+      validateForm();
+    }
+
+    function updateSubmitButtonText() {
+      const isEdit = !!document.getElementById("staffId").value;
+      const btn = document.querySelector('#staffForm button.btn-primary');
+      btn.textContent = isEdit ? "更新" : "登録";
+    }
+
+    function validateForm() {
+      const name = document.getElementById("staffName").value.trim();
+      const gender = document.getElementById("staffGender").value.trim();
+      const email = document.getElementById("staffEmail").value.trim();
+
+      const isEdit = !!document.getElementById("staffId").value;
+      const currentData = getFormData();
+      const oldData = editingStaffIndex !== null ? staffData[editingStaffIndex] : null;
+
+      let changed = false;
+
+      if (!isEdit) {
+        // 新規 → 1つでも入力あれば活性化
+        changed = !!(name || gender || email);
+      } else {
+        if (!oldData) return false;
+        changed = (
+          oldData.name !== currentData.name ||
+          oldData.gender !== currentData.gender ||
+          oldData.position !== currentData.position ||
+          oldData.email !== currentData.email ||
+          oldData.notification !== currentData.notification ||
+          oldData.note !== currentData.note ||
+          JSON.stringify(oldData.assignedServiceIds || []) !== JSON.stringify(currentData.assignedServiceIds || [])
+        );
+      }
+
+      document.getElementById("submitBtn").disabled = !changed;
+    }
+
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+</body>
+</html>

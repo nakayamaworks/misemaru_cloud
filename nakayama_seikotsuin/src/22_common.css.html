@@ -1,0 +1,182 @@
+<style>
+/* ===============================
+   基本レイアウト・フォーム関連
+   =============================== */
+html, body, body::before {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: #e3f4fd;  /* 薄い水色 */
+  color: #333333;             /* 薄めの黒 */
+}
+
+.form-wrapper {
+  width: 100%;
+  padding: 1rem;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.form-control,
+.form-select {
+  width: 100%;
+  font-size: 1rem;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+@media (min-width: 576px) {
+  .form-wrapper {
+    max-width: 420px;
+    margin: auto;
+  }
+}
+
+/* フォームのバリエーション（大きめ） */
+.form-wrapper.large {
+  max-width: 600px;
+}
+
+.btn-register-wrapper {
+  max-width: 440px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* ===============================
+   ボタンスタイル
+   =============================== */
+.btn-outline-secondary {
+  background-color: white;
+  font-weight: bold;
+  color: #6c757d;
+  border: 1px solid #6c757d;
+}
+.btn-outline-secondary:hover {
+  background-color: #f5f5f5;
+  color: #495057;
+}
+
+.btn-red {
+  background-color: #f87171;
+  color: white;
+  border: none;
+  transition: 0.2s;
+}
+.btn-red:hover {
+  background-color: white;
+  color: #f87171;
+  border: 2px solid #f87171;
+}
+
+.btn-green {
+  background-color: #4ade80;
+  color: white;
+  border: none;
+  transition: 0.2s;
+}
+.btn-green:hover {
+  background-color: white;
+  color: #4ade80;
+  border: 2px solid #4ade80;
+}
+
+.btn-blue {
+  background-color: #38bdf8;
+  color: white;
+  border: none;
+  transition: 0.2s;
+}
+.btn-blue:hover {
+  background-color: white;
+  color: #38bdf8;
+  border: 2px solid #38bdf8;
+}
+
+.btn-gray {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  transition: 0.2s;
+}
+.btn-gray:hover {
+  background-color: white;
+  color: #6b7280;
+  border: 2px solid #6b7280;
+}
+
+/* ===============================
+   ナビゲーション / ロゴ
+   =============================== */
+.navbar {
+  padding: 0.1rem;
+  background-color: #f5f5f5 !important;
+}
+.navbar-brand {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.top-logo {
+  height: 60px;
+  display: block;
+  transition: filter 0.3s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+.top-logo:hover,
+.top-logo:active {
+  filter: brightness(1.2);
+  transform: scale(1.03);
+}
+
+/* ===============================
+   テーブル関連
+   =============================== */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive table {
+  min-width: 720px;
+  table-layout: auto !important;
+}
+.table-responsive th,
+.table-responsive td {
+  white-space: nowrap !important;
+}
+
+.table-wrapper {
+  max-width: 100%;
+  padding: 0 1rem;
+}
+
+td {
+  position: relative;
+}
+
+.selected-cell {
+  background-color: #ffeeba !important;
+}
+
+#week-label {
+  font-weight: bold;
+}
+
+/* ===============================
+   その他
+   =============================== */
+.calendar-wrapper:hover #calendar-button {
+  background-color: #f5f5f5;
+  border-color: #66afe9;
+  color: #000;
+}
+
+
+</style>

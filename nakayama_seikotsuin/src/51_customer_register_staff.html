@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <?!= head ?>
+  <?!= commonJs ?>
+  <?!= commonCss ?>
+  <script>
+    const baseUrl = "<?= baseUrl ?>";
+  </script>
+  <title>📇 顧客管理</title>
+  <style>
+  @media (max-width: 576px) {
+    th, td {
+      font-size: 0.9rem;
+      min-width: 80px;
+      max-width: 80px;
+      padding: 0.1rem;
+    }
+  }
+  </style>
+</head>
+<body class="loading">
+  <div id="loading" style="text-align:center; margin-top:50px;">
+    <div class="auth-spinner"></div>
+    <p>認証チェック中...</p>
+  </div>
+  <div id="app" style="display:none;">
+
+  <div class="container pt-2 py-3">
+
+    <!-- ✅ ナビゲーションバー -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
+      <div class="container-fluid px-0">
+        <a class="navbar-brand" onclick="closeToAdmin()">
+          <img src="https://raw.githubusercontent.com/WataruNakayama1203/misemaru-cloud-assets/main/misemaru_text_only.png" alt="みせまるクラウド ロゴ" class="top-logo" />
+        </a>
+        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-lg-end" id="navbarNav">
+          <div class="d-flex flex-column flex-lg-row align-items-center gap-2 mt-2 mt-lg-0">
+            <button type="button" class="btn btn-red fw-bold px-3" onclick="goTo('10_availability_staff')">📅 予約管理</button>
+            <button type="button" class="btn btn-green fw-bold px-3" onclick="goTo('20_staff_main_staff')">👥 スタッフ管理</button>
+            <!--<button type="button" class="btn btn-blue fw-bold px-3" onclick="goTo('30_register_staff')">📇 顧客管理</button>-->
+            <button type="button" class="btn btn-gray fw-bold px-3" onclick="goTo('40_setting_main_admin')">🏪 店舗設定</button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+
+    <h4 class="mb-1 text-center">📇 顧客管理</h4>
+    <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+
+    <form id="customer-form" class="form-wrapper">
+    <div class="mb-3">
+      <label for="customer-select" class="form-label">登録済み顧客（選択式）</label>
+      <select id="customer-select" class="form-select">
+        <option value="">新規登録</option>
+      </select>
+    </div>
+
+      <input type="hidden" id="customer-id" />
+      <div class="row mb-3">
+        <div class="col">
+          <label for="lastName" class="form-label">姓 <span class="text-danger">*</span></label>
+          <input type="text" id="lastName" class="form-control" required />
+        </div>
+        <div class="col">
+          <label for="firstName" class="form-label">名 <span class="text-danger">*</span></label>
+          <input type="text" id="firstName" class="form-control" required />
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col">
+          <label for="lastKana" class="form-label">セイ（姓カナ） <span class="text-danger">*</span></label>
+          <input type="text" id="lastKana" class="form-control" required pattern="^[ァ-ヶー　]+$" title="全角カタカナで入力してください" />
+        </div>
+        <div class="col">
+          <label for="firstKana" class="form-label">メイ（名カナ） <span class="text-danger">*</span></label>
+          <input type="text" id="firstKana" class="form-control" required pattern="^[ァ-ヶー　]+$" title="全角カタカナで入力してください" />
+        </div>
+      </div>
+
+    <div class="mb-3">
+      <label for="phone" class="form-label">電話番号 <span class="text-danger">*</span></label>
+      <input type="tel" id="phone" class="form-control" required pattern="^[0-9\-]+$" title="電話番号は半角数字とハイフンのみです" />
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label">メールアドレス（任意）</label>
+      <input type="email" id="email" class="form-control"  pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$" title="メールアドレスの形式が正しくありません" />
+    </div>
+
+    <div class="mb-3">
+      <label for="cutStyle" class="form-label">カットスタイル（任意）</label>
+      <textarea id="cutStyle" class="form-control" rows="2"></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label for="note" class="form-label">備考欄（任意）</label>
+      <textarea id="note" class="form-control" rows="2"></textarea>
+    </div>
+
+      <div class="form-check mb-3">
+        <input type="hidden" id="regularFlag" value="true" />
+      </div>
+
+      <button type="submit" class="btn btn-success w-100" id="submit-btn" disabled>登録する</button>
+      <button type="button" class="btn btn-danger w-100 mt-2" id="delete-btn" disabled>削除する</button>
+    </form>
+
+
+    <div id="loading" class="text-center my-3" style="display: none;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">読み込み中...</span>
+      </div>
+      <p class="mt-3" id="loading-message">処理中です…</p>
+    </div>
+  </div>
+
+  <!-- 新規登録確認モーダル -->
+<div class="modal fade" id="confirmNewModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">新規登録しますか？</h5></div>
+      <div class="modal-body">この内容で新しく顧客を登録してもよろしいですか？</div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button class="btn btn-primary" id="confirm-new-save-btn">登録する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 上書き登録確認モーダル -->
+<div class="modal fade" id="confirmUpdateModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">上書き登録しますか？</h5></div>
+      <div class="modal-body">この内容で上書き登録してもよろしいですか？</div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button class="btn btn-primary" id="confirm-update-btn">上書きする</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">本当に削除しますか？</h5></div>
+      <div class="modal-body">選択中の顧客情報を削除してもよろしいですか？</div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button class="btn btn-danger" id="confirm-delete-btn">削除する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+ <script>
+let customerCache = [];
+let originalValues = {};
+
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("[CHILD] DOMContentLoaded → child-ready を親へ送信");
+  try {
+    window.top.postMessage(
+      { type: "misemaru:child-ready", origin: location.origin },
+      "*" // 親側で必ず event.origin を検証するので安全
+    );
+  } catch (err) {
+    console.error("[CHILD] child-ready 送信失敗:", err);
+  }
+});
+
+google.script.run.withSuccessHandler(populateCustomerSelect).getCustomerList();
+
+function populateCustomerSelect(customers) {
+  customerCache = customers;
+    
+  const select = document.getElementById("customer-select");
+  select.innerHTML = '<option value="">新規登録</option>';
+
+  const gojuonMap = {
+    ア: "ア行", イ: "ア行", ウ: "ア行", エ: "ア行", オ: "ア行",
+    カ: "カ行", キ: "カ行", ク: "カ行", ケ: "カ行", コ: "カ行",
+    サ: "サ行", シ: "サ行", ス: "サ行", セ: "サ行", ソ: "サ行",
+    タ: "タ行", チ: "タ行", ツ: "タ行", テ: "タ行", ト: "タ行",
+    ナ: "ナ行", ニ: "ナ行", ヌ: "ナ行", ネ: "ナ行", ノ: "ナ行",
+    ハ: "ハ行", ヒ: "ハ行", フ: "ハ行", ヘ: "ハ行", ホ: "ハ行",
+    マ: "マ行", ミ: "マ行", ム: "マ行", メ: "マ行", モ: "マ行",
+    ヤ: "ヤ行", ユ: "ヤ行", ヨ: "ヤ行",
+    ラ: "ラ行", リ: "ラ行", ル: "ラ行", レ: "ラ行", ロ: "ラ行",
+    ワ: "ワ行", ヲ: "ワ行", ン: "ワ行"
+  };
+
+  const toKatakana = str =>
+    str.replace(/[\u3041-\u3096]/g, ch =>
+      String.fromCharCode(ch.charCodeAt(0) + 0x60)
+    );
+
+  const grouped = {};
+  customers.forEach(c => {
+    const kana = toKatakana(c.lastKana || "").charAt(0);
+    const group = gojuonMap[kana] || "その他";
+    if (!grouped[group]) grouped[group] = [];
+    grouped[group].push(c);
+  });
+
+  const gojuonOrder = [
+    "ア行", "カ行", "サ行", "タ行", "ナ行",
+    "ハ行", "マ行", "ヤ行", "ラ行", "ワ行", "その他"
+  ];
+
+  gojuonOrder.forEach(group => {
+    if (!grouped[group]) return;
+    const optGroup = document.createElement("optgroup");
+    optGroup.label = group;
+
+    grouped[group].forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = `${c.lastName} ${c.firstName}`;
+      optGroup.appendChild(opt);
+    });
+
+    select.appendChild(optGroup);
+  });
+
+  // イベント再登録（同じままでOK）
+  select.addEventListener("change", function () {
+    const selected = customerCache.find(c => String(c.id) === this.value);
+    const submitBtn = document.getElementById("submit-btn");
+
+    if (!selected) {
+      clearForm();
+    } else {
+      document.getElementById("customer-id").value = selected.id;
+      document.getElementById("lastName").value = selected.lastName;
+      document.getElementById("firstName").value = selected.firstName;
+      document.getElementById("lastKana").value = selected.lastKana;
+      document.getElementById("firstKana").value = selected.firstKana;
+      document.getElementById("phone").value = selected.phone;
+      document.getElementById("email").value = selected.email;
+      document.getElementById("cutStyle").value = selected.cutStyle || "";
+      document.getElementById("note").value = selected.note || "";
+      document.getElementById("regularFlag").checked = selected.regularFlag === true;
+
+      originalValues = { ...selected };
+      submitBtn.textContent = "上書き登録";
+    }
+
+    updateSubmitButtonState();
+    updateDeleteButtonState();
+  });
+}
+
+
+document.getElementById("customer-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const id = document.getElementById("customer-id").value.trim();
+  const modalId = id ? "confirmUpdateModal" : "confirmNewModal";
+  const modal = new bootstrap.Modal(document.getElementById(modalId));
+  modal.show();
+});
+
+document.getElementById("confirm-new-save-btn").addEventListener("click", () => {
+  const modal = bootstrap.Modal.getInstance(document.getElementById("confirmNewModal"));
+  modal.hide();
+  doSaveCustomer(); // 登録処理実行
+});
+
+document.getElementById("confirm-update-btn").addEventListener("click", () => {
+  const modal = bootstrap.Modal.getInstance(document.getElementById("confirmUpdateModal"));
+  modal.hide();
+  doSaveCustomer(); // 登録処理実行
+});
+
+
+document.getElementById("delete-btn").addEventListener("click", function () {
+  const id = document.getElementById("customer-id").value.trim();
+  if (!id) return showError("削除する顧客を選択してください。");
+
+  const modal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+  modal.show();
+});
+
+document.getElementById("confirm-delete-btn").addEventListener("click", function () {
+  const id = document.getElementById("customer-id").value.trim();
+  if (!id) return showError("削除対象が見つかりません。");
+
+  // モーダル閉じる
+  const modal = bootstrap.Modal.getInstance(document.getElementById("confirmDeleteModal"));
+  modal.hide();
+
+  clearMessage();
+  document.getElementById("customer-form").style.display = "none";
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("loading-message").textContent = "顧客情報を削除しています…";
+
+  google.script.run
+    .withSuccessHandler((msg) => {
+      document.getElementById("loading").style.display = "none";
+      showSuccess(msg);
+      clearForm();
+      document.getElementById("customer-form").style.display = "block";
+      google.script.run.withSuccessHandler(populateCustomerSelect).getCustomerList();
+    })
+    .withFailureHandler((err) => {
+      document.getElementById("loading").style.display = "none";
+      showError("削除エラー：" + err.message);
+      document.getElementById("customer-form").style.display = "block";
+    })
+    .deleteCustomer(id);
+});
+
+
+function clearForm() {
+  document.getElementById("customer-form").reset();
+  document.getElementById("customer-id").value = "";
+  document.getElementById("regularFlag").checked = false;
+  originalValues = {};
+  updateSubmitButtonState();
+  updateDeleteButtonState();
+  document.getElementById("submit-btn").textContent = "新規登録";
+}
+
+function doSaveCustomer() {
+  const data = {
+    id: document.getElementById("customer-id").value.trim(),
+    lastName: document.getElementById("lastName").value.trim(),
+    firstName: document.getElementById("firstName").value.trim(),
+    lastKana: document.getElementById("lastKana").value.trim(),
+    firstKana: document.getElementById("firstKana").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    cutStyle: document.getElementById("cutStyle").value.trim(),
+    note: document.getElementById("note").value.trim(),
+    regularFlag: true
+  };
+
+  // ✅ サニタイズチェック
+  if (!validateSafeInputs(data)) {
+    alert("❌ 入力内容に不正なタグが含まれています。");
+    return;
+  }
+
+  clearMessage();
+
+  // 🌀 ここでフォームを非表示にして、ぐるぐる表示
+  document.getElementById("customer-form").style.display = "none";
+  const loading = document.getElementById("loading");
+  loading.style.display = "block";
+  document.getElementById("loading-message").textContent = "顧客情報を保存しています…";
+
+  google.script.run
+    .withSuccessHandler((msg) => {
+      loading.style.display = "none";
+      showSuccess(msg || "登録が完了しました！");
+      clearForm();
+      document.getElementById("customer-form").style.display = "block";
+      google.script.run.withSuccessHandler(populateCustomerSelect).getCustomerList();
+    })
+    .withFailureHandler((err) => {
+      loading.style.display = "none";
+      showError("エラー：" + err.message);
+      document.getElementById("customer-form").style.display = "block";
+    })
+    .saveCustomer(data);
+}
+
+
+
+// ✅ 入力欄すべてにイベントリスナー（input + change）をつける
+const triggerFields = ["lastName", "firstName", "lastKana", "firstKana", "phone", "email", "cutStyle", "note", "regularFlag"];
+triggerFields.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener("input", updateSubmitButtonState);
+    el.addEventListener("change", updateSubmitButtonState);
+  }
+});
+
+
+
+function updateDeleteButtonState() {
+  const hasId = document.getElementById("customer-id").value.trim() !== "";
+  document.getElementById("delete-btn").disabled = !hasId;
+}
+
+function showError(msg) {
+  const el = document.getElementById("error-message");
+  el.textContent = msg;
+  el.className = "alert alert-danger";
+  el.style.display = "block";
+
+  // ✅ エラーメッセージも3秒後に自動非表示（任意）
+  setTimeout(() => {
+    el.style.display = "none";
+  }, 3000);
+}
+
+
+function showSuccess(msg) {
+  const el = document.getElementById("error-message");
+  el.textContent = msg;
+  el.className = "alert alert-success";
+  el.style.display = "block";
+
+  // ✅ 3秒後に自動で非表示
+  setTimeout(() => {
+    el.style.display = "none";
+  }, 3000);
+}
+
+function clearMessage() {
+  const el = document.getElementById("error-message");
+  el.style.display = "none";
+  el.textContent = "";
+  el.className = "alert";
+}
+
+function updateSubmitButtonState() {
+  const current = {
+    lastName: document.getElementById("lastName").value.trim(),
+    firstName: document.getElementById("firstName").value.trim(),
+    lastKana: document.getElementById("lastKana").value.trim(),
+    firstKana: document.getElementById("firstKana").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    cutStyle: document.getElementById("cutStyle").value.trim(),
+    note: document.getElementById("note").value.trim(),
+    regularFlag: document.getElementById("regularFlag").checked
+  };
+
+  const isChanged = Object.keys(current).some(
+    key => current[key] !== (originalValues[key] ?? "")
+  );
+
+  const hasRequiredFields =
+    current.lastName &&
+    current.firstName &&
+    current.lastKana &&
+    current.firstKana &&
+    current.phone;
+
+  document.getElementById("submit-btn").disabled = !hasRequiredFields || !isChanged;
+}
+
+</script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+</body>
+</html>

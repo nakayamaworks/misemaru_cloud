@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <?!= head ?>
+  <?!= commonJs ?>
+  <?!= commonCss ?>
+  <script>
+    const baseUrl = "<?= baseUrl ?>";
+  </script>
+  <title>出勤スタッフ一覧</title>
+  <style>
+    .table-wrap { 
+    overflow-x: auto; 
+    position: relative; 
+  }
+
+  .table-fixed th:first-child,
+  .table-fixed td:first-child {
+    position: sticky; 
+    left: 0; 
+    background: #ffffff; 
+    z-index: 2;
+    white-space: normal; 
+    word-break: break-word;
+  }
+
+  th, td {
+    font-size: 0.85rem; 
+    padding: 0.4rem; 
+    min-width: 100px; 
+    max-width: 100px;
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
+    text-align: center; 
+    vertical-align: middle;
+  }
+
+  table.staff-table th, 
+  table.staff-table td {
+    font-size: 0.85rem;
+    padding: 0.4rem;
+    min-width: 120px;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  td a {
+    display: block; 
+    width: 100%; 
+    max-width: 100%; 
+    overflow: hidden;
+    text-overflow: ellipsis; 
+    white-space: nowrap; 
+    color: inherit;
+    text-decoration: none;
+  }
+  td a:hover { background-color: #f5f5f5; }
+
+  @media (max-width: 576px) {
+    th, td {
+      font-size: 0.85rem;
+      min-width: 120px;
+      max-width: 160px;
+      padding: 0.2rem;
+    }
+  }
+
+  .selected-cell a {
+    background-color: transparent !important;
+  }
+
+  #spinner-initial {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 250px; /* 全体表示を想定して少し大きめ */
+  }
+
+  /* ✅ 表だけ再読み込み用のぐるぐる */
+  #spinner-table {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px;
+  }
+
+  .reason-cell { background-color: #ffebcc; }
+
+  .staff-name-col {
+    min-width: 60px !important;
+    max-width: 80px !important;
+    width: 70px !important;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (max-width: 576px) {
+    .staff-name-col {
+      min-width: 50px !important;
+      max-width: 60px !important;
+      width: 60px !important;
+    }
+  }
+
+  .table-fixed th.staff-name-col,
+  .table-fixed td.staff-name-col {
+    word-break: normal !important;
+  }
+
+  /* スタッフ名の列だけ細くする */
+  .table-fixed th:first-child {
+    max-width: 80px !important;
+    width: 100px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.3rem;
+  }
+  @media (max-width: 576px) {
+    .table-fixed th:first-child { font-size: 0.75rem; }
+  }
+
+  #calendar-container td:hover {
+    background-color: #f0f8ff;
+  }
+
+  </style>
+</head>
+<body class="loading">
+  <div id="loading" style="text-align:center; margin-top:50px;">
+    <div class="auth-spinner"></div>
+    <p>認証チェック中...</p>
+  </div>
+  <div id="app" style="display:none;">
+
+  <div class="container">
+    
+  <!-- ✅ ナビゲーションバー -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
+    <div class="container-fluid px-0">
+      <a class="navbar-brand" onclick="closeToAdmin()">
+        <img src="https://raw.githubusercontent.com/WataruNakayama1203/misemaru-cloud-assets/main/misemaru_text_only.png" alt="みせまるクラウド ロゴ" class="top-logo" />
+      </a>
+      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-lg-end" id="navbarNav">
+        <div class="d-flex flex-column flex-lg-row align-items-center gap-2 mt-2 mt-lg-0">
+          <button type="button" class="btn btn-red fw-bold px-3" onclick="goTo('10_availability_staff')">📅 予約管理</button>
+          <!--<button type="button" class="btn btn-green fw-bold px-3" onclick="goTo('20_staff_main_staff')">👥 スタッフ管理</button>-->
+          <button type="button" class="btn btn-blue fw-bold px-3" onclick="goTo('30_register_staff')">📇 顧客管理</button>
+          <button type="button" class="btn btn-gray fw-bold px-3" onclick="goTo('40_setting_main_admin')">🏪 店舗設定</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+    <h5 class="text-center mt-0 mb-0">👥 スタッフ管理</h5>
+
+    <!-- 初期用ぐるぐる（画面中央で全体表示前） -->
+    <div id="spinner-initial" class="text-center my-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="mt-3">出勤スタッフ情報を読み込んでいます…</p>
+    </div>
+
+    <!-- ✅ 本体 -->
+    <div id="main-content" style="display: none;">
+      
+        
+        <div class="text-center mt-0 mb-2">
+          <span id="week-label" class="fs-6"></span>
+        </div>
+        <div class="d-flex justify-content-center align-items-center gap-2 mb-3 flex-wrap">
+          <!--<button class="btn btn-outline-secondary" id="prev-month">« 前月</button>-->
+          <button class="btn btn-outline-secondary" id="prev-week">‹ 前週</button>
+          <div class="calendar-wrapper" style="position: relative; display: inline-block;">
+            <input type="date" id="date-picker" style="opacity: 0; position: absolute; top: 0; left: 0; width: 40px; height: 38px; cursor: pointer; z-index: 2;"/>
+            <button id="calendar-button" class="btn btn-outline-secondary" onclick="document.getElementById('date-picker').focus()">📅</button>
+          </div>
+          <button class="btn btn-outline-secondary" id="next-week">次週 ›</button>
+          <!--<button class="btn btn-outline-secondary" id="next-month">次月 »</button>-->
+        </div>
+
+          <!-- 表だけのぐるぐる（ボタン表示しつつ表だけ切り替え） -->
+          <div id="spinner-table" class="text-center my-4" style="display: none;">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3">出勤スタッフ情報を読み込んでいます…</p>
+          </div>
+
+        <div id="calendar-container" class="table-responsive"></div>
+        <div class="form-wrapper d-grid gap-2 mt-3">
+          <button type="button" class="btn btn-primary" onclick="goTo('21_staff_register_admin')">👤 スタッフを登録/削除</a>
+          <button type="button" class="btn btn-primary" onclick="goTo('22_staff_shift_admin')">🗓 スタッフシフトを設定</a>
+          <button type="button" class="btn btn-primary" onclick="goTo('23_staff_schedule_admin')">🛌 スタッフ予定を設定</a>
+        </div>
+      
+    </div>
+  </div>
+<script>
+  let currentStartDate = null;
+  let isLoading = false;
+
+  
+  window.addEventListener("DOMContentLoaded", () => {
+    console.log("[CHILD] DOMContentLoaded → child-ready を親へ送信");
+    try {
+      window.top.postMessage(
+        { type: "misemaru:child-ready", origin: location.origin },
+        "*" // 親側で必ず event.origin を検証するので安全
+      );
+    } catch (err) {
+      console.error("[CHILD] child-ready 送信失敗:", err);
+    }
+  });
+
+  window.onload = () => {
+    // ✅ 初期スピナー表示
+    document.getElementById("main-content").style.display = "none";
+    document.getElementById("spinner-initial").style.display = "flex";
+
+    // ✅ 初期表示：1フレーム遅らせてカレンダー読み込み（ぐるぐる出すため）
+    setTimeout(() => {
+      const today = new Date();
+      const start = getStartOfWeek(today);
+      loadSchedule(start, true); // ← true = 初期表示フラグ
+    }, 0);
+
+    // ✅ カレンダー日付選択時
+    document.getElementById("date-picker").addEventListener("change", (e) => {
+      const selected = new Date(e.target.value);
+      const startOfWeek = getStartOfWeek(selected);
+      loadSchedule(startOfWeek);
+    });
+
+    // ✅ 前週・次週・前月・次月ボタン
+    document.getElementById("prev-week").addEventListener("click", () => {
+      const newDate = new Date(currentStartDate);
+      newDate.setDate(newDate.getDate() - 7);
+      loadSchedule(getStartOfWeek(newDate));
+    });
+
+    document.getElementById("next-week").addEventListener("click", () => {
+      const newDate = new Date(currentStartDate);
+      newDate.setDate(newDate.getDate() + 7);
+      loadSchedule(getStartOfWeek(newDate));
+    });
+
+    document.getElementById("prev-month").addEventListener("click", () => {
+      const newDate = new Date(currentStartDate);
+      newDate.setMonth(newDate.getMonth() - 1);
+      loadSchedule(getStartOfWeek(newDate));
+    });
+
+    document.getElementById("next-month").addEventListener("click", () => {
+      const newDate = new Date(currentStartDate);
+      newDate.setMonth(newDate.getMonth() + 1);
+      loadSchedule(getStartOfWeek(newDate));
+    });
+  };
+
+  function getStartOfWeek(d) {
+    const date = new Date(d);
+    const day = date.getDay();
+    date.setDate(date.getDate() - day); // 日曜始まり
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  function formatDate(date) {
+    return date.toISOString().split("T")[0];
+  }
+
+  function updateDateInput(date) {
+    const picker = document.getElementById("date-picker");
+    if (picker) {
+      const formatted = formatDate(date);
+      console.log("📅 updateDateInput →", formatted, "← currentStartDate:", date.toString(), "UTC:", date.toISOString());
+
+      // ✅ 同じ値なら更新しないことで、changeイベントの再発火を防ぐ
+      if (picker.value !== formatted) {
+        picker.value = formatted;
+      }
+    }
+  }
+
+
+
+  function showInitialLoading(isLoading) {
+    document.getElementById("spinner-initial").style.display = isLoading ? "flex" : "none";
+    document.getElementById("main-content").style.display = isLoading ? "none" : "block";
+  }
+
+  function showTableLoading(isLoading) {
+    document.getElementById("spinner-table").style.display = isLoading ? "flex" : "none";
+    document.getElementById("calendar-container").style.display = isLoading ? "none" : "block";
+  }
+
+  function loadSchedule(startDate, isInitial = false) {
+    if (isLoading) return; // ← ローディング中なら何もしない
+    isLoading = true;
+
+    currentStartDate = new Date(startDate);
+    updateDateInput(currentStartDate);
+    updateLabel();
+
+    if (isInitial) {
+      showInitialLoading(true);
+    } else {
+      showTableLoading(true);
+    }
+
+    const yyyyMMdd = formatJstDate(currentStartDate);
+    google.script.run.withSuccessHandler(data => {
+      renderTable(data, null, isInitial);
+      if (isInitial) {
+        showInitialLoading(false);
+      } else {
+        showTableLoading(false);
+      }
+      isLoading = false; // ✅ 成功後に解除
+    }).withFailureHandler(err => {
+      console.error("読み込み失敗:", err);
+      if (isInitial) {
+        showInitialLoading(false);
+      } else {
+        showTableLoading(false);
+      }
+      isLoading = false; // ✅ 失敗時も解除
+    }).getStaffScheduleMatrix(yyyyMMdd);
+  }
+
+
+
+  function formatJstDate(date) {
+    const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    return jst.toISOString().split("T")[0];
+  }
+
+  function renderTable(result, highlightDate, isInitial = false) {
+    const scheduleList = result.scheduleList || [];
+
+    if (isInitial) {
+      showInitialLoading(false);
+    } else {
+      showTableLoading(false);
+    }
+
+    document.getElementById("main-content").style.display = "block";
+
+    if (!result || !result.dates || !result.data) {
+      document.getElementById("calendar-container").innerHTML =
+        '<div class="text-center text-danger">表示できるデータがありません</div>';
+      return;
+    }
+
+    const dates = result.dates;
+    const data = result.data;
+    const iconMap = {
+      "出勤": "✅",
+      "時間休": "⏱️",
+      "休出": "💼",
+      "予定休": "💤"
+    };
+
+    let html = '<div class="table-wrap"><table class="table table-bordered table-fixed text-center align-middle staff-table">';
+    html += '<thead class="table-light"><tr><th>スタッフ名</th>';
+
+    for (let i = 0; i < dates.length; i++) {
+      const d = new Date(dates[i]);
+      const dow = d.getDay();
+      const dayColor = ["text-danger", "", "", "", "", "", "text-primary"][dow];
+      const youbi = "日月火水木金土".charAt(dow);
+      const label = `<span class="${dayColor}">${d.getMonth() + 1}/${d.getDate()}(${youbi})</span>`;
+      html += `<th>${label}</th>`;
+    }
+
+    html += '</tr></thead><tbody>';
+
+    for (const staff of data) {
+      html += `<tr><th class="staff-name-col">${staff.name}</th>`;
+
+      for (const date of dates) {
+        const label = staff.schedule[date];
+        let cellHtml = "-";
+        let isReason = false;
+
+        if (label && label !== "休み") {
+          const sections = label.split("\n\n");
+
+          let lines = [];
+          let firstStatus = ""; // ← 追加
+          let note = "";        // ← 追加
+
+          for (const section of sections) {
+            const parts = section.split("\n");
+            const main = parts[0];
+            const times = parts.slice(1);
+
+            if (!firstStatus && (main === "予定休" || main === "休出" || main === "時間休")) {
+              firstStatus = main;
+              note = times.join("\n"); // 時間 or 備考（改行つき）
+            }
+
+            const icon = iconMap[main] || "";
+            let sectionHtml = `<div><strong>${icon} ${main}</strong></div>`;
+            for (const t of times) {
+              sectionHtml += `<div style="font-size: 0.75rem;">${t}</div>`;
+            }
+
+            lines.push(sectionHtml);
+          }
+
+          cellHtml = lines.join("<hr style='margin: 2px 0;'>");
+
+          // ✅ 遷移URL（状態・備考もあれば付与）
+          const matched = getMatchedSchedule(staff.id, date, scheduleList);
+
+          const params = { staffId: staff.id };
+          if (matched) {
+            Object.assign(params, {
+              startDate: matched.startDate,
+              endDate:   matched.endDate,
+              startTime: matched.startTime || "",
+              endTime:   matched.endTime   || "",
+              status:    matched.status,
+              note:      matched.note || ""
+            });
+          } else {
+            params.date = date;
+          }
+
+          html += `<td onclick='goTo("23_staff_schedule_admin", ${JSON.stringify(params)})' style="cursor:pointer;">${cellHtml}</td>`;
+
+        } else {
+          // 出勤や－など → dateとstaffIdだけ
+          html += `<td onclick='goTo("23_staff_schedule_admin", ${JSON.stringify({ staffId: staff.id, date })})' style="cursor:pointer;">${cellHtml}</td>`;
+        }
+      }
+
+
+      html += "</tr>";
+    }
+
+
+    html += '</tbody></table></div>';
+    document.getElementById("calendar-container").innerHTML = html;
+
+    const allCells = document.querySelectorAll('#calendar-container td');
+    allCells.forEach(cell => {
+      cell.addEventListener('click', () => {
+        allCells.forEach(c => c.classList.remove('selected-cell'));
+        cell.classList.add('selected-cell');
+      });
+    });
+
+    if (highlightDate) {
+      const columnIndex = dates.indexOf(highlightDate);
+      if (columnIndex !== -1) {
+        const table = document.querySelector("#calendar-container table");
+        for (let i = 1; i < table.rows.length; i++) {
+          const cell = table.rows[i].cells[columnIndex + 1];
+          if (cell) {
+            cell.classList.add("selected-cell");
+            setTimeout(() => {
+              cell.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+            }, 300);
+            setTimeout(() => {
+              cell.classList.remove("selected-cell");
+            }, 5000);
+          }
+        }
+      }
+    }
+  }
+
+
+  function updateLabel() {
+    console.log("🕒 updateLabel: currentStartDate =", currentStartDate.toDateString());
+    const start = new Date(currentStartDate);
+    const end = new Date(currentStartDate);
+    end.setDate(end.getDate() + 6);
+
+    const jstStart = new Date(start.getTime() + 9 * 60 * 60 * 1000);
+    const jstEnd = new Date(end.getTime() + 9 * 60 * 60 * 1000);
+
+    const options = { month: 'numeric', day: 'numeric', weekday: 'short' };
+    const startStr = jstStart.toLocaleDateString('ja-JP', options);
+    const endStr = jstEnd.toLocaleDateString('ja-JP', options);
+
+    const yearStr = `${jstStart.getFullYear()}年`;
+
+    document.getElementById("week-label").textContent = `${yearStr} ${startStr}〜${endStr}`;
+  }
+
+  function getMatchedSchedule(staffId, dateStr, scheduleList) {
+    const target = new Date(dateStr);
+    return scheduleList.find(item => {
+      if (item.staffId !== staffId) return false;
+      const start = new Date(item.startDate);
+      const end = new Date(item.endDate);
+      return start <= target && target <= end;
+    });
+  }
+
+
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+</body>
+</html>

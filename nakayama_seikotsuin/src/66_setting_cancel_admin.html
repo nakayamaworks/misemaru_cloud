@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <?!= head ?>
+  <?!= commonJs ?>
+  <?!= commonCss ?>
+  <script>
+    const baseUrl = "<?= baseUrl ?>";
+  </script>
+  <title>🚫 キャンセルポリシー</title>
+  <style>
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive table {
+      table-layout: auto !important;
+      min-width: 700px; /* ← 独自幅 */
+    }
+
+    .table-responsive th,
+    .table-responsive td {
+      white-space: nowrap !important; /* 上書き */
+    }
+
+    td.note-cell,
+    td.name-cell {
+      white-space: pre-wrap !important;
+      word-break: break-word;
+      max-width: 160px;
+    }
+
+    .btn-register-wrapper {
+      max-width: 440px;
+      margin-left: auto;
+      margin-right: auto;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="container-fluid py-3 loading">
+  <div id="loading" style="text-align:center; margin-top:50px;">
+    <div class="auth-spinner"></div>
+    <p>認証チェック中...</p>
+  </div>
+  <div id="app" style="display:none;">
+
+  <button type="button" class="btn btn-outline-secondary mb-2" onclick="goTo('40_setting_main_admin')">← 戻る</button>
+  <h4 class="text-center mb-4">🚫 キャンセルポリシー設定</h4>
+
+  <!-- 🔄 初期読み込みスピナー -->
+  <div id="loading-spinner" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">読み込み中...</span>
+    </div>
+    <p class="mt-3">キャンセルポリシーを読み込み中です…</p>
+  </div>
+
+  <div id="form-container">
+    <!-- ✅ 一覧表示 -->
+    <div id="policy-list-area" class="mb-1">
+      <div id="save-message" class="alert alert-success text-center" style="display: none;">登録しました！</div>
+      <div id="delete-message" class="alert alert-danger text-center" style="display: none;">削除しました！</div>
+      <h5>登録済みのキャンセルポリシー</h5>
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered table-fixed">
+          <thead>
+            <tr>
+              <th>ポリシー名</th>
+              <th>適用日（日前）</th>
+              <th>料率（%）</th>
+              <th>備考</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="policyTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ✅ ＋新規作成ボタン -->
+    <div class="form-wrapper d-grid">
+      <button id="toggleFormBtn" class="btn btn-primary w-100 mb-2" ...>＋ 新規作成</button>
+    </div>
+
+      <!-- ✅ 登録フォーム -->
+      <div class="form-wrapper collapse" id="policyForm">
+        <h5 class="mb-2 mt-0">キャンセルポリシー登録</h5>
+
+        <!-- ✅ エラーメッセージ -->
+        <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+
+        <input type="hidden" id="policyId">
+
+        <div class="mb-3">
+          <label class="form-label">ポリシー名</label>
+          <input type="text" class="form-control" id="policyName">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">適用日（予約日から〇日前）</label>
+          <input type="number" class="form-control" id="applyDay">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">キャンセル料（%）</label>
+          <input type="number" class="form-control" id="feePercent">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">備考</label>
+          <input type="text" class="form-control" id="note">
+        </div>
+
+        <div class="d-grid">
+          <button class="btn btn-primary" id="submitBtn" onclick="openConfirmModal()">登録</button>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+  <!-- 🔄 保存中スピナー -->
+  <div id="saving-spinner" class="text-center my-3" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">登録中...</span>
+    </div>
+    <p class="mt-2">登録しています…</p>
+  </div>
+
+  <!-- 🔄 削除中スピナー -->
+  <div id="deleting-spinner" class="text-center my-3" style="display: none;">
+    <div class="spinner-border text-danger" role="status">
+      <span class="visually-hidden">削除中...</span>
+    </div>
+    <p class="mt-2">削除しています…</p>
+  </div>
+
+
+  <!-- ✅ 登録確認モーダル -->
+  <div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">この内容で登録してよろしいですか？</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="modal-body-text">
+          内容を確認し、「登録」を押してください。
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-primary" id="confirm-register-btn">登録</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ 削除確認モーダル -->
+  <div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">このポリシーを削除してよろしいですか？</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="delete-modal-body">一度削除すると元に戻せません。</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-btn">削除する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let policyData = [];
+  let collapseInstance;
+  let isFormOpened = false;
+  let deleteTargetIndex = null;
+  let originalPolicyData = {};
+  let isEditMode = false;
+
+  window.addEventListener("DOMContentLoaded", () => {
+    console.log("[CHILD] DOMContentLoaded → child-ready を親へ送信");
+    try {
+      window.top.postMessage(
+        { type: "misemaru:child-ready", origin: location.origin },
+        "*" // 親側で必ず event.origin を検証するので安全
+      );
+    } catch (err) {
+      console.error("[CHILD] child-ready 送信失敗:", err);
+    }
+
+    const formEl = document.getElementById("policyForm");
+    const btnEl = document.getElementById("toggleFormBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    collapseInstance = new bootstrap.Collapse(formEl, { toggle: false });
+
+    // ✅ collapse 開いたとき → 新規かどうかで処理分岐
+    formEl.addEventListener("show.bs.collapse", () => {
+      btnEl.textContent = "− 閉じる";
+      isFormOpened = true;
+
+      // 「新規作成ボタン」から開いた時だけリセット
+      if (!isEditMode) {
+        resetForm();
+      }
+
+      setTimeout(scrollToForm, 200);
+    });
+
+    formEl.addEventListener("hide.bs.collapse", () => {
+      btnEl.textContent = "＋ 新規作成";
+      resetForm();  // 閉じたら常に新規状態に戻す
+      isEditMode = false;
+      isFormOpened = false;
+    });
+
+    btnEl.addEventListener("click", () => {
+      isEditMode = false; // ← ここ重要！新規ボタンから開くときだけ false
+      const collapse = bootstrap.Collapse.getInstance(formEl) || new bootstrap.Collapse(formEl, { toggle: false });
+      if (formEl.classList.contains("show")) {
+        collapse.hide();
+      } else {
+        collapse.show();
+      }
+    });
+
+    ["policyName", "applyDay", "feePercent", "note"].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener("input", checkFormDiff);
+      el.addEventListener("change", checkFormDiff);
+    });
+
+    submitBtn.disabled = true;
+  });
+
+  function initApp(email, role) {
+    // 認証スピナーを消す（共通処理でも消してるけど安全のため再度）
+    const loadingEl = document.getElementById("loading");
+    if (loadingEl) loadingEl.style.display = "none";
+
+    // アプリの枠だけ表示（中身はまだ）
+    const appEl = document.getElementById("app");
+    if (appEl) appEl.style.display = "block";
+
+    // ---- ここからキャンセルポリシー固有の処理 ----
+    document.getElementById("policy-list-area").style.display = "none";
+    document.getElementById("toggleFormBtn").closest(".d-grid").style.display = "none";
+    document.getElementById("form-container").style.display = "none";
+
+    // キャンセルポリシー用スピナーを表示
+    document.getElementById("loading-spinner").style.display = "block";
+
+    google.script.run.withSuccessHandler(data => {
+      // データ取れたらスピナーを消してUI表示
+      document.getElementById("loading-spinner").style.display = "none";
+      document.getElementById("policy-list-area").style.display = "block";
+      document.getElementById("toggleFormBtn").closest(".d-grid").style.display = "block";
+      document.getElementById("form-container").style.display = "block";
+
+      renderPolicyList(data);
+    }).getCancelPolicyList();
+  }
+
+  function renderPolicyList(data) {
+    policyData = data;
+    const tbody = document.getElementById("policyTableBody");
+    tbody.innerHTML = "";
+
+    if (!Array.isArray(data) || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5">データがありません</td></tr>';
+      return;
+    }
+
+    data.forEach((item, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="name-cell">${item.name}</td>
+        <td>${item.applyDay}</td>
+        <td>${item.fee}</td>
+        <td class="note-cell">${item.note || "-"}</td>
+        <td>
+          <button class="btn btn-sm btn-warning" onclick="editPolicy(${i})">編集</button>
+          <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${i})">削除</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function openConfirmModal() {
+    const errorMessage = validateForm();
+    const errorEl = document.getElementById("error-message");
+
+    if (errorMessage) {
+      errorEl.textContent = errorMessage;
+      errorEl.style.display = "block";
+      return;
+    }
+
+    errorEl.style.display = "none";
+
+    const data = getFormData();
+
+    // ✅ サニタイズチェック
+    if (!validateSafeInputs(data)) {
+      alert("❌ 入力内容に不正なタグが含まれています。");
+      return;
+    }
+
+    const isUpdate = !!data.id;
+
+    const modalTitle = isUpdate
+      ? "この内容で更新してよろしいですか？"
+      : "この内容で登録してよろしいですか？";
+    const confirmBtnText = isUpdate ? "更新" : "登録";
+
+    document.querySelector("#confirmModal .modal-title").textContent = modalTitle;
+    document.getElementById("confirm-register-btn").textContent = confirmBtnText;
+
+    let msg = "";
+
+    if (isUpdate) {
+      // ✅ 更新時 → 差分強調
+      const fields = [
+        { label: "ポリシー名", key: "name" },
+        { label: "適用日", key: "applyDay", suffix: "日前" },
+        { label: "料率", key: "fee", suffix: "%" },
+        { label: "備考", key: "note" },
+      ];
+
+      msg += `<ul class="list-group list-group-flush">`;
+      fields.forEach(({ label, key, suffix = "" }) => {
+        const before = originalPolicyData[key] || "-";
+        const after = data[key] || "-";
+
+        const changed = String(before) !== String(after);
+        const rowClass = changed ? "text-danger fw-bold" : "";
+        const arrow = changed ? ` → ${after}${suffix}` : "";
+
+        msg += `<li class="list-group-item ${rowClass}">
+          ${label}：${before}${suffix}${arrow}
+        </li>`;
+      });
+      msg += `</ul>`;
+    } else {
+      // ✅ 新規時 → シンプル表示
+      msg = `
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">ポリシー名：${data.name}</li>
+          <li class="list-group-item">適用日：${data.applyDay}日前</li>
+          <li class="list-group-item">料率：${data.fee}%</li>
+          <li class="list-group-item">備考：${data.note || "-"}</li>
+        </ul>
+      `;
+    }
+
+    document.getElementById("modal-body-text").innerHTML = msg;
+    new bootstrap.Modal(document.getElementById("confirmModal")).show();
+  }
+
+
+
+
+  document.getElementById("confirm-register-btn").addEventListener("click", () => {
+    const modal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
+    modal.hide();
+    savePolicy();
+  });
+
+  function savePolicy() {
+    const payload = getFormData();
+
+    // ✅ サニタイズチェック
+    if (!validateSafeInputs(payload)) {
+      alert("❌ 入力内容に不正なタグが含まれています。");
+      return;
+    }
+
+    document.getElementById("saving-spinner").style.display = "block";
+    document.getElementById("policy-list-area").style.display = "none";
+    document.getElementById("toggleFormBtn").style.display = "none";
+    document.getElementById("form-container").style.display = "none";
+
+    google.script.run.withSuccessHandler(() => {
+      google.script.run.withSuccessHandler(data => {
+        renderPolicyList(data);
+        document.getElementById("saving-spinner").style.display = "none";
+        document.getElementById("policy-list-area").style.display = "block";
+        document.getElementById("toggleFormBtn").style.display = "block";
+        document.getElementById("form-container").style.display = "block";
+        document.getElementById("save-message").style.display = "block";
+        setTimeout(() => document.getElementById("save-message").style.display = "none", 3000);
+        originalPolicyData = {};  // 初期化
+        collapseInstance.hide();
+      }).getCancelPolicyList();
+    }).saveCancelPolicy(payload);
+  }
+
+  function getFormData() {
+    return {
+      id: document.getElementById("policyId").value || "",
+      name: document.getElementById("policyName").value,
+      applyDay: document.getElementById("applyDay").value,
+      fee: document.getElementById("feePercent").value,
+      note: document.getElementById("note").value
+    };
+  }
+
+  function resetForm() {
+    document.getElementById("policyId").value = "";
+    document.getElementById("policyName").value = "";
+    document.getElementById("applyDay").value = "";
+    document.getElementById("feePercent").value = "";
+    document.getElementById("note").value = "";
+
+    // ボタン文言
+    document.querySelector("#policyForm .btn-primary").textContent = "登録";
+    document.querySelector("#policyForm .btn-primary").disabled = true;
+
+    // 初期値キャプチャ（空の状態）
+    originalPolicyData = getFormData();
+  }
+
+  function editPolicy(index) {
+    const data = policyData[index];
+    document.getElementById("policyId").value = data.id;
+    document.getElementById("policyName").value = data.name;
+    document.getElementById("applyDay").value = data.applyDay;
+    document.getElementById("feePercent").value = data.fee;
+    document.getElementById("note").value = data.note;
+
+    document.getElementById("submitBtn").textContent = "更新";
+    document.getElementById("submitBtn").disabled = true;
+
+    originalPolicyData = getFormData();
+
+    isEditMode = true; // ← 編集モードに設定
+
+    if (!isFormOpened) {
+      collapseInstance.show();
+      setTimeout(scrollToForm, 200);
+    } else {
+      scrollToForm();
+    }
+  }
+
+
+  function checkFormDiff() {
+    const current = getFormData();
+
+    // 比較：新規は「空との差」、更新は「originalPolicyDataとの差」
+    const isNew = !current.id;
+    const hasDiff = JSON.stringify(current) !== JSON.stringify(originalPolicyData);
+
+    // 活性化条件
+    const isActive = isNew ? !!(current.name || current.applyDay || current.fee || current.note) : hasDiff;
+
+    document.querySelector("#policyForm .btn-primary").disabled = !isActive;
+  }
+
+
+
+  function openDeleteModal(index) {
+    deleteTargetIndex = index;
+    const name = policyData[index].name;
+    document.getElementById("delete-modal-body").innerHTML = `ポリシー名：<strong>${name}</strong><br>を削除してよろしいですか？`;
+    new bootstrap.Modal(document.getElementById("deleteModal")).show();
+  }
+
+  document.getElementById("confirm-delete-btn").addEventListener("click", () => {
+    if (deleteTargetIndex === null) return;
+    const id = policyData[deleteTargetIndex].id;
+
+    // 🔄 スピナー表示
+    document.getElementById("deleting-spinner").style.display = "block";
+    document.getElementById("policy-list-area").style.display = "none";
+    document.getElementById("toggleFormBtn").style.display = "none";
+    document.getElementById("form-container").style.display = "none";
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById("deleteModal"));
+    modal.hide();
+
+    google.script.run
+      .withSuccessHandler(() => {
+        // 削除成功後に一覧再取得
+        google.script.run.withSuccessHandler(data => {
+          renderPolicyList(data);
+
+          // ✅ スピナーを非表示に戻す
+          document.getElementById("deleting-spinner").style.display = "none";
+
+          // ✅ 一覧などを表示
+          document.getElementById("policy-list-area").style.display = "block";
+          document.getElementById("toggleFormBtn").style.display = "block";
+          document.getElementById("form-container").style.display = "block";
+
+          // ✅ 削除完了メッセージ表示
+          document.getElementById("delete-message").style.display = "block";
+          setTimeout(() => document.getElementById("delete-message").style.display = "none", 3000);
+        }).getCancelPolicyList();
+      })
+      .deleteCancelPolicy(id);
+  });
+
+
+  function scrollToForm() {
+    const form = document.getElementById("policyForm");
+    if (form) {
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function validateForm() {
+    const name = document.getElementById("policyName").value.trim();
+    const applyDay = document.getElementById("applyDay").value.trim();
+    const fee = document.getElementById("feePercent").value.trim();
+
+    if (!name) return "ポリシー名を入力してください";
+    if (!applyDay || isNaN(applyDay) || Number(applyDay) < 0) return "適用日（日前）には0以上の数字を入力してください";
+    if (!fee || isNaN(fee) || Number(fee) < 0 || Number(fee) > 100) return "キャンセル料（%）は0〜100の間で入力してください";
+
+    return null;
+  }
+
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+</body>
+</html>

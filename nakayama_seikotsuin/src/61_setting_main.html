@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <?!= head ?>
+  <?!= commonJs ?>
+  <?!= commonCss ?>
+  <script>
+    const baseUrl = "<?= baseUrl ?>";
+  </script>
+  <title>🏪 店舗設定</title>
+</head>
+<body class="loading">
+  <div id="loading" style="text-align:center; margin-top:50px;">
+    <div class="auth-spinner"></div>
+    <p>認証チェック中...</p>
+  </div>
+  <div id="app" style="display:none;">
+
+  <div class="container pt-2 pb-4">
+  
+    <!-- ✅ ナビゲーションバー -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
+      <div class="container-fluid px-0">
+        <a class="navbar-brand" onclick="closeToAdmin()">
+          <img src="https://raw.githubusercontent.com/WataruNakayama1203/misemaru-cloud-assets/main/misemaru_text_only.png" alt="みせまるクラウド ロゴ" class="top-logo" />
+        </a>
+        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-lg-end" id="navbarNav">
+          <div class="d-flex flex-column flex-lg-row align-items-center gap-2 mt-2 mt-lg-0">
+            <button type="button" class="btn btn-red fw-bold px-3" onclick="goTo('10_availability_staff')">📅 予約管理</button>
+            <button type="button" class="btn btn-green fw-bold px-3" onclick="goTo('20_staff_main_staff')">👥 スタッフ管理</button>
+            <button type="button" class="btn btn-blue fw-bold px-3" onclick="goTo('30_register_staff')">📇 顧客管理</button>
+            <!--<button type="button" class="btn btn-gray fw-bold px-3" onclick="goTo('40_setting_main_admin')">🏪 店舗設定</button>-->
+          </div>
+        </div>
+      </div>
+    </nav>
+
+  <h5 class="text-center mb-1">🏪 店舗設定</h5>
+
+  <!-- セクション: 基本設定 -->
+  <div class="section mt-0 mb-2">
+    <div class="section-title">⚙️ 基本設定</div>
+    <div class="btn-group-vertical w-100 gap-2">
+      <button type="button" class="btn btn-outline-secondary" onclick="goTo('41_setting_reservation_admin')">📝 店舗情報・予約設定</button>
+    </div>
+  </div>
+
+  <!-- セクション: 時間設定 -->
+  <div class="section mt-0 mb-2">
+    <div class="section-title">📅 営業カレンダー</div>
+    <div class="btn-group-vertical w-100 gap-2">
+      <button type="button" class="btn btn-outline-secondary" onclick="goTo('42_setting_business_hours_admin')">⏰ 営業時間</button>
+      <button type="button" class="btn btn-outline-secondary" onclick="goTo('43_setting_holidays_admin')">📆 休業日</button>
+    </div>
+  </div>
+
+  <!-- セクション: サービス関連 -->
+  <div class="section mt-0 mb-2">
+    <div class="section-title">🪄 サービス関連</div>
+    <div class="btn-group-vertical w-100 gap-2">
+      <button type="button" class="btn btn-outline-secondary" onclick="goTo('46_setting_service_admin')">🪄 サービス</button>
+      <!--<button type="button" class="btn btn-outline-secondary" onclick="goTo('45_setting_discount_admin')">🏷️ 割引設定</button>-->
+      <button type="button" class="btn btn-outline-secondary" onclick="goTo('44_setting_cancel_admin')">📄 キャンセルポリシー</button>
+    </div>
+  </div>
+
+  <!-- セクション: 売上関連 
+  <div class="section mt-0">
+    <div class="section-title">💰 売上関連</div>
+    <div class="btn-group-vertical w-100 gap-2">
+      <a href="URL_TO_売上計上" class="btn btn-outline-secondary">📊 売上計上</a>
+    </div>
+  </div>
+  -->
+</div>
+
+<script>
+
+  window.addEventListener("DOMContentLoaded", () => {
+    console.log("[CHILD] DOMContentLoaded → child-ready を親へ送信");
+    try {
+      window.top.postMessage(
+        { type: "misemaru:child-ready", origin: location.origin },
+        "*" // 親側で必ず event.origin を検証するので安全
+      );
+    } catch (err) {
+      console.error("[CHILD] child-ready 送信失敗:", err);
+    }
+  });
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+</body>
+</html>

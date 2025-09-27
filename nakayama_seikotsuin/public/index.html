@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>みせまる理容室</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+  /* ---- ベース（全高） ---- */
+  html, body {
+    margin: 0; padding: 0;
+    background-color: #231816; color: #efefef;
+    height: auto;                /* vh固定をやめる */
+    min-height: 100dvh;          /* 実画面高に追従 */
+    overscroll-behavior-y: none; /* 親へのスクロール連鎖を止める */
+  }
+  #wrap { min-height: 100%; display: flex; flex-direction: column; }
+  #topMenu { margin-bottom: 1rem; }
+
+  /* iframe 域（通常時は親の中に収まる） */
+  #app { flex: 1; }
+  .modal-content {
+    color: #231816 !important;
+  }
+
+  /* ユーティリティ */
+  .hidden { display: none !important; }
+  .invisible { visibility: hidden !important; }
+
+  /* ボタン色 */
+  .btn-red, .btn-green, .btn-blue, .btn-gray { color:#231816; border:none; transition:.2s; }
+  .btn-red   { background:#f87171; }
+  .btn-green { background:#4ade80; }
+  .btn-blue  { background:#38bdf8; }
+  .btn-gray  { background:#6b7280; }
+  .btn-red:hover   { background:#333333; color:#f87171; border:2px solid #f87171; }
+  .btn-green:hover { background:#333333; color:#4ade80; border:2px solid #4ade80; }
+  .btn-blue:hover  { background:#333333; color:#38bdf8; border:2px solid #38bdf8; }
+  .btn-gray:hover  { background:#333333; color:#6b7280; border:2px solid #6b7280; }
+  .btn-lg small { font-size: .9rem; }
+
+  /* ロゴ */
+  .hero img {
+    height: 60px; display: block; margin: 1rem auto;
+  }
+
+  /* ---- 子画面 全画面モード ---- */
+  .app-mode { overflow: hidden; }        /* 親スクロールを止める */
+  #app.fullscreen {
+    position: fixed; inset: 0;
+    z-index: 10;
+    background: #231816;                 /* 透け防止 */
+  }
+  /* iframe を“実”ビューポート高に。iOSでも戻らない */
+  #app.fullscreen iframe {
+    width: 100vw;
+    height: 100vh;                        /* 最低限のフォールバック */
+    display: block; border: 0;
+    overscroll-behavior: contain;         /* 子の端で止める（連鎖防止） */
+    -webkit-overflow-scrolling: touch;    /* 慣性スクロール */
+  }
+  @supports (height: 100svh) {
+    #app.fullscreen iframe { height: 100svh; }  /* Safari対策 */
+  }
+  @supports (height: 100dvh) {
+    #app.fullscreen iframe { height: 100dvh; }  /* 新標準：実画面高 */
+  }
+
+  /* 全画面時は親UIを消す */
+  .app-mode #topMenu,
+  .app-mode .hero,
+  .app-mode footer { display: none !important; }
+
+  /* ---- 読み込みオーバーレイ ---- */
+  .overlay {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,.35);
+    color: #fff; text-align: center;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid #fff; border-top-color: transparent;
+    border-radius: 50%; animation: spin 1s linear infinite;
+    margin-bottom: .75rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 追加・修正 */
+  #app { position: relative; }
+  
+  /* 読み込み中は iframe を薄暗く */
+  #app.loading iframe {
+    filter: brightness(0.6);
+    transition: filter .2s ease;
+  }
+  
+  /* アプリ内オーバーレイ（フルスクリーン時に使う） */
+  #inlineOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.35);
+    color: #fff;
+    text-align: center;
+  }
+  #inlineOverlay.show { display: flex; }
+  /* iframeの初期背景を親と合わせる：白チラ回避 */
+  #frame {
+    background: #231816; /* 親の背景色に合わせる。透明でもOKだが子ページが白指定だと負ける */
+    will-change: opacity;
+    transition: opacity .18s ease-out;
+    opacity: 1;
+  }
+  
+  /* 読み替え中は薄くする（完全に非表示にしない） */
+  #frame.is-fading {
+    opacity: .01; /* 0にすると合成レイヤ落ち→白チラ要因になる端末がある */
+  }
+  
+  /* オーバーレイは遅延で出す。すぐ出すと“チラ見え”の原因 */
+  #overlay.hidden { display: none; }
+  #gasFrame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+  /* 🔹 ログインボタンのラッパを小さく固定 */
+  #google-login-container {
+    display: inline-block;
+    margin: 0.5rem;
+    position: absolute;
+    top: 0.5rem;
+    right: 0rem;
+  }
+  /* コンテナ基準に絶対配置できるように */
+  #wrap { position: relative; }
+  
+  /* スマホ：画面の右上に固定（コンテナ無視） */
+  @media (max-width: 767.98px) {
+    #google-login-container{
+      position: fixed;
+      top: max(8px, env(safe-area-inset-top));
+      right: max(8px, env(safe-area-inset-right));
+      margin: 0;
+      z-index: 1000; /* 常に前面 */
+    }
+  }
+  
+  /* PC：コンテナの右端に揃える＋ロゴとほぼ水平 */
+  @media (min-width: 768px) {
+    #google-login-container {
+      position: absolute;
+      top: 0.5rem;
+      right: 0;
+    }
+  }
+  
+  /* 子画面フルスクリーン中はボタン非表示（被り防止） */
+  .app-mode #google-login-container { display: none !important; }
+
+  
+</style>
+</head>
+<body>
+  <div id="wrap" class="container container-narrow py-0">
+    <!-- Google Sign-In ボタン用ラッパ -->
+    <div id="google-login-container">
+      <div id="g_id_onload"
+           data-client_id="982431897942-epgcq6gn01c19oormn1q8d8gh6csvr54.apps.googleusercontent.com"
+           data-context="signin"
+           data-callback="onSignIn"
+           data-auto_prompt="false"
+           data-use_fedcm_for_prompt="true">
+      </div>
+      <div class="g_id_signin mb-2"
+           data-type="standard"
+           data-shape="rectangular"
+           data-theme="outline"
+           data-text="signin_with"
+           data-size="large"
+           data-logo_alignment="right">
+      </div>
+    </div>
+    <!-- ヘッダー（親UI） -->
+    <div class="hero">
+      <img src="https://raw.githubusercontent.com/WataruNakayama1203/misemaru-cloud-assets/main/luxury-barber-logo-design.png"
+          alt="店舗 ロゴ"
+          style="max-width: 100%; height: auto; display: block; margin-left: auto; margin-right: auto;" />
+    </div>
+
+    <!-- 親のトップメニュー -->
+    <div id="topMenu" class="d-grid gap-3">
+      <button class="btn btn-red btn-lg"   onclick="navigateTo('50_reservation_customer')">
+        📅 予約カレンダー<br><small>新規予約はこちらから</small>
+      </button>
+      <button class="btn btn-green btn-lg" onclick="navigateTo('60_confirm_customer')">
+        ✔ 予約確認<br><small>予約の確認や変更・キャンセルはこちらから</small>
+      </button>
+    </div>
+
+    <!-- 子（GAS）を表示する領域 -->
+    <div id="app" class="hidden">
+      <iframe id="gasFrame" title="Misemaru App"
+        allow="fullscreen; clipboard-read; clipboard-write; geolocation; camera; microphone; web-share"></iframe>
+
+      <div id="inlineOverlay" class="">
+        <div class="spinner"></div>
+        <div class="overlay-msg">ページ読み込み中…</div>
+      </div>
+    </div>
+
+    <!-- 🔶 読み込みオーバーレイ -->
+    <div id="overlay" class="overlay hidden" aria-hidden="true">
+      <div class="spinner"></div>
+      <div class="overlay-msg">ページ読み込み中…</div>
+    </div>
+  
+    <footer class="text-center" style="margin-top: 1rem; font-size: 0.9rem;">
+      &copy; 2025 みせまるクラウド. All rights reserved.
+    </footer>
+  </div>
+
+  <!-- 🔹 セッション切れモーダル -->
+  <div class="modal fade" id="sessionExpiredModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">ログインセッションが切れました</h5>
+        </div>
+        <div class="modal-body">
+          <p>再度ログインしてください。</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" onclick="startGoogleLogin()">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+  // === boot: sessionStorage から復元 ===
+  try {
+    window.userEmail = sessionStorage.getItem("userEmail") || "";
+    if (window.userEmail) console.log("[LOGIN] restored from sessionStorage:", window.userEmail);
+  } catch (e) { /* no-op */ }
+
+   // --- Base64URL → JSON デコード共通 ---
+  function decodeBase64Url(b64url) {
+    if (!b64url || typeof b64url !== "string") return "";
+    // Base64URL → Base64 へ変換（-/_ とパディング）
+    const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/")
+                      .padEnd(Math.ceil(b64url.length / 4) * 4, "=");
+    // Unicode安全デコード
+    try {
+      return decodeURIComponent(escape(atob(b64)));
+    } catch (e) {
+      console.warn("[LOGIN] atob decode failed:", e);
+      return "";
+    }
+  }
+
+  // 表示上の“最後にボタンが覚えているメール”を記録
+let _lastGsiEmailShown = (sessionStorage.getItem("userEmail") || "");
+
+// GSIボタンを“一度だけ”手動描画に切り替える（今ある .g_id_signin を置き換え）
+function refreshGsiButton() {
+  const wrap = document.getElementById("google-login-container");
+  if (!wrap) return;
+
+  // 既存の自動描画ボタンを外す
+  const auto = wrap.querySelector(".g_id_signin");
+  if (auto) auto.remove();
+
+  // 手動描画ターゲットを用意
+  let target = wrap.querySelector("#signin-button");
+  if (!target) {
+    target = document.createElement("div");
+    target.id = "signin-button";
+    wrap.appendChild(target);
+  } else {
+    target.innerHTML = "";
+  }
+
+  // 再初期化して描画
+  if (window.google?.accounts?.id) {
+    window.google.accounts.id.initialize({
+      client_id: "982431897942-epgcq6gn01c19oormn1q8d8gh6csvr54.apps.googleusercontent.com",
+      callback: onSignIn,
+      use_fedcm_for_prompt: true,
+    });
+    window.google.accounts.id.renderButton(target, {
+      theme: "outline",
+      size: "large",
+      text: "signin_with",
+      shape: "rectangular",
+      logo_alignment: "right",
+    });
+  }
+}
+
+// 旧アカウントの“自動選択/個人化”を消して、ボタン再描画
+function resetGsiPersonalization(prevEmail) {
+  try { window.google?.accounts?.id?.disableAutoSelect?.(); } catch(_) {}
+  try {
+    if (prevEmail) window.google?.accounts?.id?.revoke?.(prevEmail, () => {
+      console.log("[GSI] revoke done for:", prevEmail);
+    });
+  } catch(_) {}
+  refreshGsiButton();
+}
+
+// サインイン時に“表示アカウント”のズレを直す
+function handleAccountSwitch(newEmail) {
+  if (_lastGsiEmailShown && _lastGsiEmailShown !== newEmail) {
+    resetGsiPersonalization(_lastGsiEmailShown);
+  }
+  _lastGsiEmailShown = newEmail;
+}
+
+  
+function parseGoogleCredential(credential) {
+  try {
+    const parts = String(credential || "").split(".");
+    if (parts.length < 2) throw new Error("invalid jwt");
+    const json = decodeBase64Url(parts[1]);
+    return json ? JSON.parse(json) : null;
+  } catch (e) {
+    console.warn("[LOGIN] credential parse failed:", e);
+    return null;
+  }
+}
+
+// --- Google Sign-In コールバック（差し替え）---
+// ===== サインイン待ちキュー =====
+let _afterSignInQueue = [];
+let _promptInFlight = false;
+  
+function ensureSignedIn(runAfter) {
+ if (window.userEmail) { runAfter?.(); return; }
+  // ← ここで即復元（リロード直後など）
+  try {
+    const s = sessionStorage.getItem("userEmail");
+    if (s) { window.userEmail = s; runAfter?.(); return; }
+  } catch (e) {}
+
+  _afterSignInQueue.push(runAfter);
+ if (!_promptInFlight) {
+   _promptInFlight = true;
+   console.log("[LOGIN] prompt() start");
+   try {
+     window.google?.accounts?.id?.prompt?.((n) => {
+       _promptInFlight = false;
+       console.log("[LOGIN] prompt() cb",
+         { dismissed: n.isDismissedMoment?.(), notDisplayed: n.isNotDisplayed?.(), skipped: n.isSkippedMoment?.() });
+     });
+   } catch (e) {
+     _promptInFlight = false;
+     console.warn("[LOGIN] prompt() error", e);
+   }
+ }
+ showInlineLoginPrompt();
+}
+
+function scheduleTokenRefresh() {
+// 55分ごとに実行
+setInterval(() => {
+  console.log("[LOGIN] token refresh attempt...");
+  try {
+    google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        console.warn("[LOGIN] silent refresh failed, will require manual login");
+        // 必要なら再ログイン画面に誘導
+        forceReLogin();
+      }
+    });
+  } catch (e) {
+    console.error("[LOGIN] token refresh error", e);
+    forceReLogin();
+  }
+}, 55 * 60 * 1000);
+}
+
+function forceReLogin() {
+  try { showParentUI(); } catch {}
+  
+  // トークン情報クリア
+  try {
+    sessionStorage.removeItem("gsiAuth");
+    sessionStorage.removeItem("idToken");
+    sessionStorage.removeItem("userEmail");
+  } catch(e) {}
+  refreshGsiButton();
+
+  // モーダルを表示（Bootstrap 5）
+  const modalEl = document.getElementById("sessionExpiredModal");
+  if (modalEl) {
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+}
+
+function onSignIn(response) {
+  const token = response?.credential || "";
+  const payload = parseGoogleCredential(token);
+  console.log("[LOGIN] onSignIn payload", payload);
+
+  const email = payload?.email || "";
+  const exp   = payload?.exp   || 0;   // 秒
+
+  if (!email || !token) {
+    alert("Googleログインに失敗しました。もう一度お試しください。");
+    showLoginPrompt();
+    return;
+  }
+
+  // 表示用途にだけ使う
+  window.userEmail = email;
+
+  // 署名付きトークンを保存（検証はサーバー側）
+  try {
+    sessionStorage.setItem("gsiAuth", JSON.stringify({ idToken: token, email, exp }));
+    sessionStorage.setItem("userEmail", email); // 既存コード互換のため残す（認可には使わない）
+    sessionStorage.setItem("idToken", token);   // 互換キーも用意
+    sessionStorage.setItem("idTokenIssuedAt", String(Date.now())); 
+  } catch(e) { console.warn(e); }
+
+  console.log("✅ Logged in as:", email);
+  handleAccountSwitch(email);
+
+  const q = _afterSignInQueue.splice(0);
+  q.forEach(fn => { try { fn?.(); } catch(e) { console.warn(e); } });
+
+  setTimeout(routeAfterLogin, 0);
+  scheduleTokenRefresh();
+}
+
+function restoreLoginState() {
+  try {
+    const raw = sessionStorage.getItem("gsiAuth");
+    const saved = raw && JSON.parse(raw);
+    if (saved?.email && saved?.exp*1000 > Date.now() && saved?.idToken) {
+      window.userEmail = saved.email;
+    } else {
+      sessionStorage.removeItem("gsiAuth");
+      sessionStorage.removeItem("idToken");
+      window.userEmail = "";
+    }
+  } catch (e) {
+    console.warn("[LOGIN] 復元エラー", e);
+    window.userEmail = "";
+  }
+}
+
+
+
+// --- ログイン後の画面制御（差し替え）---
+// ※ 親(GitHub)では google.script.run は使えないので呼ばない！
+//   認可チェックは iframe(子/GAS) が受け取って実施する。
+  function routeAfterLogin() {
+    // ログイン後は常に index（親UIトップ）に戻す
+    console.log("[PARENT] routeAfterLogin", { userEmail: window.userEmail });
+    hardResetToIndex();
+  }
+
+  const GAS_BASE = "https://script.google.com/macros/s/AKfycbwW1ELjbBf1AAwr5H6HPsG-IgQXGOD7RBYhvbmmjCCUQBBbLzD1vmF9KYuVJ4j2zw/exec?key=ZDNhYWMzNGItMmU1OC00YTA2LTk4ZDctZmFlN2JhZGZhODg3";
+
+  // ★ これが“index（親）のベースURL）”。?page を一切含まないURLに正規化
+  const BASE_URL = (() => {
+    const u = new URL(location.href);
+    u.searchParams.delete("page");
+    // 絶対パス化 + ハッシュも消す派なら u.hash = "";
+    return u.origin + u.pathname;           // 末尾スラなし/ありはどちらでもOK
+  })();
+
+   window.addEventListener('DOMContentLoaded', () => {
+    if (window.google?.accounts?.id) {
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          console.log("[LOGIN] サイレントログインなし");
+        }
+      });
+    }
+  
+    // --- ここを先に実行 ---
+    if (sessionStorage.getItem("showLoginBanner")) {
+      sessionStorage.removeItem("showLoginBanner");
+  
+      const hero = document.querySelector(".hero");
+      if (hero) {
+        const prompt = document.createElement("div");
+        prompt.className = "text-center my-1";
+        prompt.innerHTML = `<p class="text-danger fw-bold">Googleアカウントでログインしてください</p>`;
+        hero.insertAdjacentElement("afterend", prompt);
+      }
+    }
+  
+    const u = new URL(location.href);
+    const p = u.searchParams.get('page');
+    if (!p) return;
+  
+    // page 以外のパラメータも子に引き継ぐ
+    const params = {};
+    u.searchParams.forEach((v, k) => { if (k !== 'page') params[k] = v; });
+  
+    history.replaceState({ page: p, params }, "", u.toString());
+  
+    // push=false で履歴を増やさず、今のURLのまま起動
+    navigateTo(p, false, params);
+    refreshGsiButton();
+  });
+
+
+  const frame   = document.getElementById("gasFrame");
+  const app     = document.getElementById("app");
+  const overlay = document.getElementById("overlay"); // あれば使う
+
+  let navSeq = 0;
+
+  const pageFromLocation = () => {
+    const u = new URL(location.href);
+    return u.searchParams.get("page") || "";
+  };
+
+  function showParentUI() {
+    // 親UIを見せる。URLや履歴はいじらない
+    document.body.classList.remove("app-mode");
+    app.classList.remove("loading", "fullscreen");
+    app.classList.add("hidden");
+    overlay?.classList.add("hidden");
+    inlineOverlay?.classList.remove("show");
+    refreshGsiButton();
+  }
+
+  // ★ indexへ“ハードに戻る”（履歴上書きで前のページを消す）
+  function hardResetToIndex() {
+    document.body.classList.remove("app-mode");
+    if (app) {
+      app.classList.add("hidden");
+      app.classList.remove("fullscreen");
+    }
+    if (frame) frame.classList.add("invisible");
+    if (overlay) overlay.classList.add("hidden");
+    location.replace(BASE_URL);
+  }
+
+  function startGoogleLogin() {
+    // 親UIに戻す
+    try { showParentUI(); } catch {}
+  
+    const modalEl = document.getElementById("sessionExpiredModal");
+    const modal   = bootstrap.Modal.getInstance(modalEl);
+  
+    // 認証状態クリア
+    try {
+      sessionStorage.removeItem("gsiAuth");
+      sessionStorage.removeItem("idToken");
+      sessionStorage.removeItem("userEmail");
+    } catch {}
+    window.userEmail = "";
+  
+    // 最後に見ていたページを保存
+    try {
+      const last = pageFromLocation() || framePage() || "";
+      if (last) sessionStorage.setItem("resumePage", last);
+    } catch {}
+  
+    // フォーカスを外してからモーダル閉じ
+    if (modalEl.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+  
+    const doPrompt = () => {
+      if (window.google?.accounts?.id) {
+        try { window.google.accounts.id.disableAutoSelect?.(); } catch {}
+        google.accounts.id.prompt((n) => {
+          if (n.isNotDisplayed?.() || n.isSkippedMoment?.()) {
+            refreshGsiButton();
+            showInlineLoginPrompt();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        });
+      } else {
+        const t = setInterval(() => {
+          if (window.google?.accounts?.id) { clearInterval(t); doPrompt(); }
+        }, 100);
+        setTimeout(() => clearInterval(t), 4000);
+      }
+    };
+  
+    if (modal) {
+      modalEl.addEventListener("hidden.bs.modal", doPrompt, { once: true });
+      modal.hide();
+    } else {
+      doPrompt();
+    }
+  }
+
+
+
+  function urlFor(page, params = {}) {
+    const u = new URL(GAS_BASE);
+    u.searchParams.set("page", page);
+    for (const [k, v] of Object.entries(params)) {
+      if (v != null && v !== "") u.searchParams.set(k, String(v));
+    }
+    return u.toString();
+  }
+
+const inlineOverlay = document.getElementById("inlineOverlay");
+
+const framePage = () => {
+  try {
+    return new URL(frame?.src || "", location.origin).searchParams.get("page") || "";
+  } catch { return ""; }
+};
+
+// ====== グローバル変数 ======
+let _childWin = null;
+let _childOrigin = null;
+//let navSeq = 0;  既存のグローバル
+
+function isAllowedChildOrigin(origin) {
+  try {
+    const h = new URL(origin).hostname;
+    return (
+      origin.startsWith("https://script.google.com") ||
+      h.endsWith(".googleusercontent.com")
+    );
+  } catch { return false; }
+}
+
+//ログイン画面を表示
+function showLoginPrompt() {
+  const heroElem = document.querySelector(".hero");
+  if (!heroElem) return;
+
+  const exist = document.getElementById("google-login-container");
+  if (exist) { 
+    refreshGsiButton();  // ← ここで再描画して早期 return
+    return;
+  }
+  const container = document.createElement("div");
+  container.id = "google-login-container";
+  container.className = "text-center my-4";
+  container.innerHTML = `
+    <p class="mb-3">Googleアカウントでログインしてください</p>
+    <div id="login-btn"></div>
+  `;
+  heroElem.insertAdjacentElement("afterend", container);
+
+  if (window.google?.accounts?.id) {
+    window.google.accounts.id.initialize({
+      client_id: "982431897942-epgcq6gn01c19oormn1q8d8gh6csvr54.apps.googleusercontent.com",
+      callback: onSignIn,
+      use_fedcm_for_prompt: true,
+    });
+
+    window.google.accounts.id.renderButton(
+      document.getElementById("login-btn"),
+      {
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "rectangular",
+        logo_alignment: "right",
+      }
+    );
+  } else {
+    console.error("❌ Google Identity Services がまだロードされていません");
+  }
+}
+
+function showInlineLoginPrompt() {
+  // フラグを残して index に戻す
+  sessionStorage.setItem("showLoginBanner", "1");
+  location.replace(BASE_URL);
+}
+
+// --- 追加：子オリジン許可チェックと child-ready ハンドラ ---
+function isAllowedChildOrigin(origin) {
+  try {
+    const h = new URL(origin).hostname;
+    return origin.startsWith("https://script.google.com") || h.endsWith(".googleusercontent.com");
+  } catch { return false; }
+}
+
+// ====== ページ遷移処理 ======
+function navigateTo(page, push = true, params = {}) {
+  if (!page) { hardResetToIndex(); return; }
+
+  // まず email を一元取得（window → sessionStorage の順）
+  const email = window.userEmail || sessionStorage.getItem("userEmail") || "";
+  if (!email) {
+    console.warn("[PARENT] navigateTo: 未ログイン → ナビゲーション中断", { page, push, params });
+    showInlineLoginPrompt();
+    return;
+  }
+
+  const current = pageFromLocation();
+  const currentFrame = framePage();
+  if (current === page && currentFrame === page && app.classList.contains("fullscreen")) return;
+
+  const nextUrl = urlFor(page, params);
+  navSeq++; const mySeq = navSeq;
+
+  const wasFullscreen = app.classList.contains("fullscreen");
+  let overlayTimer;
+  if (wasFullscreen) {
+    inlineOverlay?.classList.remove("show");
+    overlayTimer = setTimeout(() => { app.classList.add("loading"); inlineOverlay?.classList.add("show"); }, 220);
+  } else {
+    overlay?.classList.add("hidden");
+    overlayTimer = setTimeout(() => overlay?.classList.remove("hidden"), 220);
+  }
+
+  const cleanup = () => {
+    frame.removeEventListener("load", onLoad);
+    frame.removeEventListener("error", onError);
+    clearTimeout(overlayTimer);
+    clearTimeout(timer);
+  };
+
+  const onLoad = () => {
+    if (mySeq !== navSeq) return;
+    cleanup();
+    if (!wasFullscreen) {
+      document.body.classList.add("app-mode");
+      app.classList.remove("hidden");
+      app.classList.add("fullscreen");
+    }
+    app.classList.remove("loading");
+    inlineOverlay?.classList.remove("show");
+    overlay?.classList.add("hidden");
+  };
+
+  const onError = () => {
+    if (mySeq !== navSeq) return;
+    cleanup();
+    app.classList.remove("loading");
+    inlineOverlay?.classList.remove("show");
+    overlay?.classList.add("hidden");
+    hardResetToIndex();
+    alert("ページの読み込みに失敗しました。");
+  };
+
+  const timer = setTimeout(() => {
+    if (mySeq !== navSeq) return;
+    cleanup();
+    app.classList.remove("loading");
+    inlineOverlay?.classList.remove("show");
+    overlay?.classList.add("hidden");
+    hardResetToIndex();
+  }, 12000);
+
+  frame.addEventListener("load", onLoad,  { once: true });
+  frame.addEventListener("error", onError, { once: true });
+
+  // 保険で window.name にも埋める（子側が拾えることがある）
+  requestAnimationFrame(() => {
+    console.log("[PARENT] setFrameUrlReplace:", nextUrl);
+    try {
+      const payload = { type: "misemaru-email", email, page };
+      frame.name = JSON.stringify(payload);
+      frame.setAttribute("name", frame.name);
+      console.log("[PARENT] frame.name セット:", frame.name);
+    } catch (e) {
+      console.warn("[PARENT] frame.name セット失敗:", e);
+    }
+    setFrameUrlReplace(nextUrl);
+  });
+
+  if (push) {
+    const u = new URL(location.href);
+    u.searchParams.set("page", page);
+    for (const [k, v] of Object.entries(params)) {
+      if (v != null && v !== "") u.searchParams.set(k, String(v));
+      else u.searchParams.delete(k);
+    }
+    history.pushState({ page, params }, "", u.toString());
+  }
+}
+
+// ========= 設定 =========
+// テナントごとにトップへ戻すURL（GitHub Pages等）。未設定なら index に戻す
+const HOME_URL = "https://watarunakayama1203.github.io/misemaru-public/";
+
+// 受け付ける送信元
+const ALLOWED_ORIGINS = ["https://script.google.com"];
+function isAllowedOrigin(origin) {
+  try {
+    if (ALLOWED_ORIGINS.includes(origin)) return true;
+    const h = new URL(origin).hostname;
+    return h.endsWith(".googleusercontent.com");
+  } catch { return false; }
+}
+
+// idToken 取得ヘルパ
+function getIdToken() {
+  try {
+    const raw = sessionStorage.getItem("gsiAuth");
+    if (raw) {
+      const j = JSON.parse(raw);
+      if (j?.idToken) return j.idToken;
+    }
+    return sessionStorage.getItem("idToken") || "";
+  } catch { return ""; }
+}
+
+// 親 ← 子: メッセージ受付（child-ready / request-email / navigate / close）
+window.addEventListener("message", (e) => {
+  const d = e.data || {};
+
+  // 期限切れは最優先で処理
+  if (d?.type === "misemaru:token-expired") {
+    try { forceReLogin(); } catch {}
+    return;
+  }
+
+  if (!isAllowedOrigin(e.origin)) return;
+
+  // child-ready に応答して email + idToken + page を必ず同梱
+  if (d.type === "misemaru:child-ready") {
+    const email   = window.userEmail || sessionStorage.getItem("userEmail") || "";
+    const idToken = getIdToken();
+
+    // page は frame.src → 取れなければ URL の ?page → それでも無ければ空
+    let page = framePage();
+    if (!page) {
+      try {
+        const frameEl = document.getElementById("gasFrame");
+        if (frameEl && frameEl.src) {
+          const u = new URL(frameEl.src, location.href);
+          page = u.searchParams.get("page") || "";
+        }
+      } catch {}
+    }
+    if (!page) page = pageFromLocation() || "";
+
+    console.log("[PARENT] child-ready 受信:", { email, hasToken: !!idToken, page });
+    e.source.postMessage({ type: "misemaru:email", email, idToken, page }, e.origin);
+    return;
+  }
+
+  // 互換: 子が request-email を投げてきた場合も同じペイロードで返す
+  if (d.type === "misemaru:request-email") {
+    const email   = window.userEmail || sessionStorage.getItem("userEmail") || "";
+    const idToken = getIdToken();
+    const page    = framePage() || pageFromLocation() || "";
+    console.log("[PARENT] request-email 受信:", { email, hasToken: !!idToken, page });
+    e.source.postMessage({ type: "misemaru:email", email, idToken, page }, e.origin);
+    return;
+  }
+
+  // ルーティングと close は既存どおり
+  if (d.type === "misemaru:navigate") {
+    const push = d.replace ? false : true;
+    const params = (d.params && typeof d.params === "object") ? d.params : {};
+    if (typeof d.page === "string" && d.page) {
+      navigateTo(d.page, push, params);
+      return;
+    }
+    if (typeof d.url === "string" && d.url) {
+      const u = new URL(d.url, location.origin);
+      const page = u.searchParams.get("page") || "";
+      if (page) {
+        const p = {};
+        for (const [k, v] of u.searchParams.entries()) if (k !== "page") p[k] = v;
+        navigateTo(page, push, p);
+      }
+      return;
+    }
+    return;
+  }
+
+  if (d.type === "misemaru:close") {
+    if (HOME_URL) location.href = HOME_URL;
+    else hardResetToIndex();
+    return;
+  }
+  if (d.type === "misemaru:admin-close") {
+    if (ADMIN_URL) location.href = ADMIN_URL;
+    else hardResetToIndex();
+    return;
+  }
+});
+
+
+function setFrameUrlReplace(url) {
+  const f = frame; // id="gasFrame"
+  try {
+    if (f && f.contentWindow && f.contentWindow.location) {
+      f.contentWindow.location.replace(url);
+      return;
+    }
+  } catch(_) { /* cross-origin read はNGでも write はOK。read失敗は無視 */ }
+  if (f) f.src = url;
+}
+
+window.addEventListener("pageshow", (ev) => {
+  if (!ev.persisted) return; // bfcacheから戻った時だけ
+  const u = new URL(location.href);
+  const p = u.searchParams.get("page");
+  const params = {};
+  u.searchParams.forEach((v, k) => { if (k !== "page") params[k] = v; });
+
+  if (p) {
+    // 子を再起動（履歴は触らない）
+    setFrameUrlReplace(urlFor(p, params));
+    document.body.classList.add("app-mode");
+    app.classList.remove("hidden");
+    app.classList.add("fullscreen");
+    overlay?.classList.add("hidden");
+    inlineOverlay?.classList.remove("show");
+  } else {
+    showParentUI();
+  }
+});
+
+
+// 戻る/進む
+window.addEventListener("popstate", () => {
+  const u = new URL(location.href);
+  const p = u.searchParams.get("page");
+  const params = {};
+  u.searchParams.forEach((v, k) => { if (k !== "page") params[k] = v; });
+
+  // ★ URLを“真実”として state を正規化（URLは変えない）
+  if (p) {
+    history.replaceState({ page: p, params }, "", u.toString());
+
+    // ★ 子だけ再起動（履歴は増やさない）…URLと表示のねじれ解消（②）
+    setFrameUrlReplace(urlFor(p, params));
+
+    // 親の見せ方を合わせる
+    document.body.classList.add("app-mode");
+    app.classList.remove("hidden");
+    app.classList.add("fullscreen");
+    overlay?.classList.add("hidden");
+    inlineOverlay?.classList.remove("show");
+  } else {
+    // ?page= 無し＝親トップを表示（リロードはしない）（③の青画面防止）
+    showParentUI();
+  }
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

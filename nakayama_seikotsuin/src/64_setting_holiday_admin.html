@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <base target="_top">
+    <?!= head ?>
+    <?!= commonJs ?>
+    <?!= commonCss ?>
+    <script>
+      const baseUrl = "<?= baseUrl ?>";
+    </script>
+    <title>📆 休業日</title>
+    <style>
+      input[type="date"],
+      input[type="time"] {
+        text-align: center !important;
+      }
+
+      #holiday-list-area {
+        max-width: 840px;
+      }
+
+      @media (min-width: 768px) {
+        #holidayTable td {
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
+        #holidayTable th {
+          width: auto !important;
+        }
+      }
+
+      #holidayTable td:nth-child(1),  /* 日付 */
+      #holidayTable td:nth-child(2),  /* 時間 */
+      #holidayTable td:nth-child(3) { /* 備考 */
+        vertical-align: middle;
+      }
+
+      /* holiday画面専用：フォームwrapperを少し圧縮 */
+      .form-wrapper {
+        padding: 0.5rem 1rem; /* ← pt-3 → pt-2相当 */
+      }
+    </style>
+  </head>
+  <body class="container-fluid py-3 loading">
+  <div id="loading" style="text-align:center; margin-top:50px;">
+    <div class="auth-spinner"></div>
+    <p>認証チェック中...</p>
+  </div>
+  <div id="app" style="display:none;">
+
+  <button type="button" class="btn btn-outline-secondary mb-2" onclick="goTo('40_setting_main_admin')">← 戻る</button>
+  <h4 class="mb-2 text-center">📆 休業日設定</h4>
+
+  <div id="loading-init" class="text-center my-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">読み込み中...</span>
+    </div>
+    <p class="mt-3">休業日データを読み込んでいます…</p>
+  </div>
+
+    <!-- 🔄 保存中ぐるぐる -->
+    <div id="saving-spinner" class="text-center my-3" style="display: none;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">保存中...</span>
+      </div>
+      <p class="mt-2">登録しています…</p>
+    </div>
+
+    <!-- 🔄 削除中ぐるぐる -->
+    <div id="deleting-spinner" class="text-center my-3" style="display: none;">
+      <div class="spinner-border text-danger" role="status">
+        <span class="visually-hidden">削除中...</span>
+      </div>
+      <p class="mt-2">削除しています…</p>
+    </div>
+
+    <!-- ✅ 削除完了メッセージ -->
+    <div id="delete-message" class="alert alert-danger text-center" style="display: none;">
+      削除しました！
+    </div>
+
+
+    <!-- ✅ 成功メッセージ -->
+    <div id="save-message" class="alert alert-success text-center" style="display: none;">
+      登録しました！
+    </div>
+
+  <div id="main-content">
+    <div class="container-fluid px-2 mb-2" id="holiday-list-area" style="display: none;">
+      <h5>登録済みの休業日</h5>
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered" id="holidayTable">
+          <thead>
+            <tr>
+              <th style="width: 32%;">日付</th>
+              <th style="width: 15%;">時間</th>
+              <th style="width: 32%;">備考</th>
+              <th style="width: 23%;">操作</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="form-wrapper mb-0">
+        <button id="toggleFormBtn" class="btn btn-primary w-100 mb-0" type="button" data-bs-toggle="collapse" data-bs-target="#form-area" aria-expanded="false" aria-controls="form-area">
+          ＋ 新規作成
+        </button>
+      </div>
+    </div>
+
+    <div class="form-wrapper collapse mt-0" id="form-area">
+    <h5 class="mb-2 mt-0">休業日登録</h5>
+
+    <!-- 🔴 エラーメッセージエリア -->
+    <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+      <div class="row">
+        <div class="mb-3 col">
+          <label for="holidayStartDate" class="form-label">開始日</label>
+          <input type="date" class="form-control" id="holidayStartDate" onchange="syncEndDate()">
+        </div>
+        <div class="mb-3 col">
+          <label for="holidayEndDate" class="form-label">終了日</label>
+          <input type="date" class="form-control" id="holidayEndDate">
+        </div>
+      </div>
+      <div class="mb-3 row">
+        <div class="col">
+          <label for="startTime" class="form-label">開始時間（任意）
+          </label>
+          <input type="time" class="form-control" id="startTime">
+        </div>
+        <div class="col">
+          <label for="endTime" class="form-label">終了時間（任意）</label>
+          <input type="time" class="form-control" id="endTime">
+        </div>
+        <small class="text-muted d-block">※時間指定は開始日～終了日すべてに適用されます</small>
+      </div>
+      <div class="mb-3">
+        <label for="note" class="form-label">備考（任意）</label>
+        <input type="text" class="form-control" id="note">
+      </div>
+
+      <div class="d-grid gap-2 mt-4">
+        <button id="saveButton" class="btn btn-primary" onclick="openRegisterModal()">登録</button>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ✅ 登録確認モーダル -->
+  <div class="modal fade" id="confirmRegisterModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmRegisterModalTitle">この内容で登録してよろしいですか？</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="modal-body-text">
+          内容を確認し、「登録」を押してください。
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-primary" id="confirm-register-btn">登録</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 削除確認モーダル -->
+  <div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">この休業日を削除してよろしいですか？</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          一度削除すると元に戻せません。
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-btn">削除する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let deleteTargetIndex = null;
+    let editingIndex = null;
+    let collapseInstance = null;
+    let originalHolidayData = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("[CHILD] DOMContentLoaded → child-ready を親へ送信");
+      try {
+        window.top.postMessage(
+          { type: "misemaru:child-ready", origin: location.origin },
+          "*" // 親側で必ず event.origin を検証するので安全
+        );
+      } catch (err) {
+        console.error("[CHILD] child-ready 送信失敗:", err);
+      }
+
+      const btn = document.getElementById("toggleFormBtn");
+      const form = document.getElementById("form-area");
+      collapseInstance = new bootstrap.Collapse(form, { toggle: false });
+
+      form.addEventListener("show.bs.collapse", () => {
+        btn.textContent = "− 閉じる";
+      });
+
+      form.addEventListener("hide.bs.collapse", () => {
+        btn.textContent = "＋ 新規作成";
+      });
+
+      btn.addEventListener("click", () => {
+        if (form.classList.contains("show")) {
+          collapseInstance.hide();
+        } else {
+          clearFormInputs();  // ✅ 新規なら初期化
+          collapseInstance.show();
+          setTimeout(scrollToForm, 200);
+        }
+      });
+
+      // ✅ ここでフォームの input 変更時にボタン状態更新する
+      ["holidayStartDate", "holidayEndDate", "startTime", "endTime", "note"].forEach(id => {
+        document.getElementById(id).addEventListener("input", updateSaveButtonState);
+      });
+
+      // ✅ 最初は非活性
+      updateSaveButtonState();
+    });
+
+
+    window.onload = function () {
+      google.script.run.withSuccessHandler(renderHolidays).getHolidayListRaw();
+    };
+
+    function renderHolidays(data) {
+      window.holidayData = data;
+      document.getElementById("loading-init").style.display = "none";
+      document.getElementById("holiday-list-area").style.display = "block";
+
+      const tableBody = document.querySelector("#holidayTable tbody");
+      tableBody.innerHTML = "";
+
+      if (!Array.isArray(data)) {
+        tableBody.innerHTML = '<tr><td colspan="4">データの取得に失敗しました</td></tr>';
+        return;
+      }
+
+      data.forEach((row, index) => {
+        let dateDisplay = row.startDate === row.endDate
+          ? `${row.startDate}`
+          : `${row.startDate}〜${row.endDate}`;
+
+        let timeDisplay = "終日";
+        if (row.start && row.end) timeDisplay = `${row.start}〜${row.end}`;
+        else if (row.start && !row.end) timeDisplay = `${row.start}〜`;
+        else if (!row.start && row.end) timeDisplay = `〜${row.end}`;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${dateDisplay}</td>
+          <td>${timeDisplay}</td>
+          <td>${row.note || ""}</td>
+          <td>
+            <button class="btn btn-sm btn-warning mb-1 me-2 d-inline-block" onclick="editHoliday(${index})">編集</button>
+            <button class="btn btn-sm btn-danger d-inline-block" onclick="openDeleteModal(${index}, '${row.startDate}', '${row.endDate}', '${row.start || ""}', '${row.end || ""}', '${row.note || ""}')">
+              削除
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      // ✅ collapseInstance を再取得（これが大事！！）
+      const form = document.getElementById("form-area");
+      collapseInstance = bootstrap.Collapse.getOrCreateInstance(form, { toggle: false });
+
+      // ✅ 入力フォーム初期化
+      document.getElementById("holidayStartDate").value = "";
+      document.getElementById("holidayEndDate").value = "";
+      document.getElementById("startTime").value = "";
+      document.getElementById("endTime").value = "";
+      document.getElementById("note").value = "";
+
+      // ✅ フォームを閉じておく
+      collapseInstance.hide();
+    }
+
+    window.editHoliday = function(index) {
+      const row = window.holidayData[index];
+      editingIndex = index;
+      originalHolidayData = {
+        startDate: row.startDate,
+        endDate: row.endDate,
+        startTime: row.start,
+        endTime: row.end,
+        note: row.note || ""
+      };
+
+      // ボタン文言を「更新」に
+      document.getElementById("saveButton").textContent = "更新";
+
+      document.getElementById("holidayStartDate").value = row.startDate.replace(/\//g, '-');
+      document.getElementById("holidayEndDate").value = row.endDate.replace(/\//g, '-');
+      document.getElementById("startTime").value = row.start || "";
+      document.getElementById("endTime").value = row.end || "";
+
+      document.getElementById("note").value = row.note || "";
+
+      if (collapseInstance) {
+        collapseInstance.show();
+        setTimeout(scrollToForm, 200);
+      }
+      updateSaveButtonState();
+    };
+
+
+    function syncEndDate() {
+      // 編集中ならスキップ
+      if (editingIndex !== null) return;
+
+      const startDate = document.getElementById("holidayStartDate").value;
+      document.getElementById("holidayEndDate").value = startDate;
+    }
+
+    function openRegisterModal() {
+      const startDate = document.getElementById("holidayStartDate").value;
+      const endDate = document.getElementById("holidayEndDate").value;
+      const startTime = document.getElementById("startTime").value;
+      const endTime = document.getElementById("endTime").value;
+      const note = document.getElementById("note").value;
+
+      // ✅ サニタイズチェック
+      if (!validateSafeInputs(note)) {
+        alert("❌ 入力内容に不正なタグが含まれています。");
+        return;
+      }
+
+      // ✅ バリデーション
+      if (!startDate) {
+        showErrorMessage("開始日は必須です！");
+        return;
+      }
+
+      if (endDate && endDate < startDate) {
+        showErrorMessage("終了日は開始日と同じか、それ以降の日付を選んでください。");
+        return;
+      }
+
+      if (startDate === endDate && startTime && endTime && startTime >= endTime) {
+        showErrorMessage("終了時間は開始時間より後の時間を選んでください。");
+        return;
+      }
+
+      const isEdit = editingIndex !== null;
+
+      // ✅ モーダルタイトルを変更
+      const title = document.getElementById("confirmRegisterModalTitle");
+      title.textContent = isEdit
+        ? "この内容で更新してよろしいですか？"
+        : "この内容で登録してよろしいですか？";
+
+      // ✅ ボタン文言も変更
+      const confirmBtn = document.getElementById("confirm-register-btn");
+      confirmBtn.textContent = isEdit ? "更新" : "登録";
+
+      // ✅ 差分表示用フォーマット
+      const formatDate = (s, e) => (s === e ? s : `${s}〜${e}`);
+      const formatTime = (s, e) => {
+        if (!s && !e) return "終日";
+        if (s && e) return `${s}〜${e}`;
+        if (s) return `${s}〜`;
+        if (e) return `〜${e}`;
+      };
+
+      let msg = "<ul class='list-group list-group-flush'>";
+
+      if (isEdit && originalHolidayData) {
+        const prev = originalHolidayData;
+
+        const dateOld = formatDate(prev.startDate, prev.endDate);
+        const dateNew = formatDate(startDate, endDate);
+
+        const isTimeChanged = (prev.startTime || "") !== (startTime || "") || (prev.endTime || "") !== (endTime || "");
+
+        const timeOldDisplay = formatTime(prev.startTime, prev.endTime);
+        const timeNewDisplay = formatTime(startTime, endTime);
+
+        const noteOld = prev.note || "-";
+        const noteNew = note || "-";
+
+        // ✅ 差分強調表示
+        msg += `<li class='list-group-item'>期間：${
+          dateOld !== dateNew
+            ? `<span class="text-danger fw-bold">${dateOld} → ${dateNew}</span>`
+            : dateNew
+        }</li>`;
+
+        msg += `<li class='list-group-item'>時間：${
+          isTimeChanged
+            ? `<span class="text-danger fw-bold">${timeOldDisplay} → ${timeNewDisplay}</span>`
+            : timeNewDisplay
+        }</li>`;
+
+        msg += `<li class='list-group-item'>備考：${
+          noteOld !== noteNew
+            ? `<span class="text-danger fw-bold">${noteOld} → ${noteNew}</span>`
+            : noteNew
+        }</li>`;
+      } else {
+        // ✅ 新規登録時
+        msg += `<li class='list-group-item'>期間：${formatDate(startDate, endDate)}</li>`;
+        msg += `<li class='list-group-item'>時間：${formatTime(startTime, endTime)}</li>`;
+        msg += `<li class='list-group-item'>備考：${note || "-"}</li>`;
+      }
+
+      msg += "</ul>";
+
+      document.getElementById("modal-body-text").innerHTML = msg;
+
+      // ✅ モーダル表示
+      new bootstrap.Modal(document.getElementById("confirmRegisterModal")).show();
+    }
+
+
+
+    document.getElementById("confirm-register-btn").addEventListener("click", () => {
+      const modal = bootstrap.Modal.getInstance(document.getElementById("confirmRegisterModal"));
+      modal.hide();
+      saveHoliday();
+    });
+
+    function saveHoliday() {
+      document.getElementById("saving-spinner").style.display = "block";
+      document.getElementById("main-content").style.display = "none";
+
+      const payload = {
+        startDate: document.getElementById("holidayStartDate").value,
+        endDate: document.getElementById("holidayEndDate").value,
+        start: document.getElementById("startTime").value,
+        end: document.getElementById("endTime").value,
+        note: document.getElementById("note").value,
+        index: editingIndex
+      };
+
+      // ✅ サニタイズチェック
+      if (!validateSafeInputs(payload)) {
+        alert("❌ 入力内容に不正なタグが含まれています。");
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(() => {
+          google.script.run.withSuccessHandler(data => {
+            renderHolidays(data);
+
+            document.getElementById("saving-spinner").style.display = "none";
+            document.getElementById("main-content").style.display = "block";
+
+            // ✅ ← ここを collapseInstance に統一
+            if (collapseInstance) {
+              collapseInstance.hide();
+            }
+
+            // ✅ 入力初期化（念のため2重で残す）
+            document.getElementById("holidayStartDate").value = "";
+            document.getElementById("holidayEndDate").value = "";
+            document.getElementById("startTime").value = "";
+            document.getElementById("endTime").value = "";
+            document.getElementById("note").value = "";
+
+            showSaveMessage();
+            editingIndex = null;
+          }).getHolidayListRaw();
+        })
+        .saveHoliday(payload);
+    }
+
+    function showSaveMessage() {
+      const msgDiv = document.getElementById("save-message");
+      msgDiv.style.display = "block";
+      setTimeout(() => {
+        msgDiv.style.display = "none";
+      }, 3000);
+    }
+
+    function clearFormInputs() {
+      editingIndex = null;
+      originalHolidayData = {};
+      document.getElementById("holidayStartDate").value = "";
+      document.getElementById("holidayEndDate").value = "";
+      document.getElementById("startTime").value = "";
+      document.getElementById("endTime").value = "";
+      document.getElementById("note").value = "";
+
+      updateSaveButtonState();
+
+      document.getElementById("saveButton").textContent = "登録";
+    }
+
+    function openDeleteModal(index, startDate, endDate, start, end, note) {
+      deleteTargetIndex = index;
+
+      const dateDisplay = startDate === endDate ? startDate : `${startDate}〜${endDate}`;
+
+      let timeDisplay = "終日";
+      if (start && end) timeDisplay = `${start}〜${end}`;
+      else if (start && !end) timeDisplay = `${start}〜`;
+      else if (!start && end) timeDisplay = `〜${end}`;
+
+      const modal = new bootstrap.Modal(document.getElementById("deleteModal"));
+      const body = document.querySelector("#deleteModal .modal-body");
+      body.innerHTML = `
+        <p>以下の休業日を削除してよろしいですか？</p>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">期間：${dateDisplay}</li>
+          <li class="list-group-item">時間：${timeDisplay}</li>
+          <li class="list-group-item">備考：${note || "-"}</li>
+        </ul>
+      `;
+      modal.show();
+    }
+
+    document.getElementById("confirm-delete-btn").addEventListener("click", () => {
+      const modal = bootstrap.Modal.getInstance(document.getElementById("deleteModal"));
+      modal.hide();
+
+      if (deleteTargetIndex !== null) {
+        // 🔄 表示切り替え
+        document.getElementById("deleting-spinner").style.display = "block";
+        document.getElementById("delete-message").style.display = "none";
+        document.getElementById("main-content").style.display = "none";
+
+        google.script.run
+          .withSuccessHandler(() => {
+            // ✅ 削除完了後に、一覧を再取得して反映！
+            google.script.run
+              .withSuccessHandler(data => {
+                renderHolidays(data);
+                document.getElementById("deleting-spinner").style.display = "none";
+                document.getElementById("main-content").style.display = "block";
+                showDeleteMessage();
+              })
+              .getHolidayListRaw();
+          })
+          .deleteHoliday(deleteTargetIndex);
+      }
+    });
+
+    function showDeleteMessage() {
+      const msgDiv = document.getElementById("delete-message");
+      msgDiv.style.display = "block";
+      setTimeout(() => {
+        msgDiv.style.display = "none";
+      }, 3000);
+    }
+
+    function scrollToForm() {
+      const form = document.getElementById("form-area");
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function showErrorMessage(text) {
+      const el = document.getElementById("error-message");
+      el.textContent = text;
+      el.style.display = "block";
+
+      // 自動で非表示（5秒後）
+      setTimeout(() => el.style.display = "none", 5000);
+    }
+
+    function getCurrentFormData() {
+      return {
+        startDate: document.getElementById("holidayStartDate").value,
+        endDate: document.getElementById("holidayEndDate").value,
+        startTime: document.getElementById("startTime").value,
+        endTime: document.getElementById("endTime").value,
+        note: document.getElementById("note").value
+      };
+    }
+
+    function updateSaveButtonState() {
+      const saveBtn = document.getElementById("saveButton");
+      const formData = getCurrentFormData();
+
+      // 新規 or 編集の判定
+      if (editingIndex === null) {
+        // 新規：1項目でも入っていれば活性化
+        const hasInput = Object.values(formData).some(val => val);
+        saveBtn.disabled = !hasInput;
+      } else {
+        // 編集：初期データと違えば活性化
+        const isChanged = JSON.stringify(formData) !== JSON.stringify(originalHolidayData);
+        saveBtn.disabled = !isChanged;
+      }
+    }
+
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </div>
+  </body>
+</html>
