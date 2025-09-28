@@ -108,6 +108,15 @@
   // 表示上の“最後にボタンが覚えているメール”を記録
 let _lastGsiEmailShown = (sessionStorage.getItem("userEmail") || "");
 
+// GSIの読み込み待ちユーティリティ
+function whenGoogleReady(cb){
+  if (window.google?.accounts?.id) { try { cb(); } catch(_){} return; }
+  const t = setInterval(() => {
+    if (window.google?.accounts?.id) { clearInterval(t); try { cb(); } catch(_){} }
+  }, 100);
+  setTimeout(() => clearInterval(t), 5000);
+}
+
 // GSIボタンを“一度だけ”手動描画に切り替える（今ある .g_id_signin を置き換え）
 function refreshGsiButton() {
   const wrap = document.getElementById("google-login-container");
@@ -127,8 +136,8 @@ function refreshGsiButton() {
     target.innerHTML = "";
   }
 
-  // 再初期化して描画
-  if (window.google?.accounts?.id) {
+  // 再初期化して描画（GSI読込完了を待つ）
+  whenGoogleReady(() => {
     window.google.accounts.id.initialize({
       client_id: (window.MISEMARU && window.MISEMARU.GSI_CLIENT_ID) || "",
       callback: onSignIn,
@@ -141,7 +150,7 @@ function refreshGsiButton() {
       shape: "rectangular",
       logo_alignment: "right",
     });
-  }
+  });
 }
 
 // 旧アカウントの“自動選択/個人化”を消して、ボタン再描画
@@ -319,7 +328,7 @@ function restoreLoginState() {
   })();
 
    window.addEventListener('DOMContentLoaded', () => {
-    if (window.google?.accounts?.id) {
+    whenGoogleReady(() => {
       try {
         window.google.accounts.id.initialize({
           client_id: (window.MISEMARU && window.MISEMARU.GSI_CLIENT_ID) || "",
@@ -327,12 +336,13 @@ function restoreLoginState() {
           use_fedcm_for_prompt: true,
         });
       } catch(_) {}
-      google.accounts.id.prompt((notification) => {
+      window.google.accounts.id.prompt((notification) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
           console.log("[LOGIN] サイレントログインなし");
         }
       });
-    }
+      refreshGsiButton();
+    });
   
     // --- ここを先に実行 ---
     if (sessionStorage.getItem("showLoginBanner")) {
