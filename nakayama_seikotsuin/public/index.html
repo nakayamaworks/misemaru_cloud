@@ -5,169 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>みせまる理容室</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/misemaru-common.css" />
+  <link rel="stylesheet" href="css/theme-customer.css" />
+
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <style>
-  /* ---- ベース（全高） ---- */
-  html, body {
-    margin: 0; padding: 0;
-    background-color: #231816; color: #efefef;
-    height: auto;                /* vh固定をやめる */
-    min-height: 100dvh;          /* 実画面高に追従 */
-    overscroll-behavior-y: none; /* 親へのスクロール連鎖を止める */
-  }
-  #wrap { min-height: 100%; display: flex; flex-direction: column; }
-  #topMenu { margin-bottom: 1rem; }
-
-  /* iframe 域（通常時は親の中に収まる） */
-  #app { flex: 1; }
-  .modal-content {
-    color: #231816 !important;
-  }
-
-  /* ユーティリティ */
-  .hidden { display: none !important; }
-  .invisible { visibility: hidden !important; }
-
-  /* ボタン色 */
-  .btn-red, .btn-green, .btn-blue, .btn-gray { color:#231816; border:none; transition:.2s; }
-  .btn-red   { background:#f87171; }
-  .btn-green { background:#4ade80; }
-  .btn-blue  { background:#38bdf8; }
-  .btn-gray  { background:#6b7280; }
-  .btn-red:hover   { background:#333333; color:#f87171; border:2px solid #f87171; }
-  .btn-green:hover { background:#333333; color:#4ade80; border:2px solid #4ade80; }
-  .btn-blue:hover  { background:#333333; color:#38bdf8; border:2px solid #38bdf8; }
-  .btn-gray:hover  { background:#333333; color:#6b7280; border:2px solid #6b7280; }
-  .btn-lg small { font-size: .9rem; }
-
-  /* ロゴ */
-  .hero img {
-    height: 60px; display: block; margin: 1rem auto;
-  }
-
-  /* ---- 子画面 全画面モード ---- */
-  .app-mode { overflow: hidden; }        /* 親スクロールを止める */
-  #app.fullscreen {
-    position: fixed; inset: 0;
-    z-index: 10;
-    background: #231816;                 /* 透け防止 */
-  }
-  /* iframe を“実”ビューポート高に。iOSでも戻らない */
-  #app.fullscreen iframe {
-    width: 100vw;
-    height: 100vh;                        /* 最低限のフォールバック */
-    display: block; border: 0;
-    overscroll-behavior: contain;         /* 子の端で止める（連鎖防止） */
-    -webkit-overflow-scrolling: touch;    /* 慣性スクロール */
-  }
-  @supports (height: 100svh) {
-    #app.fullscreen iframe { height: 100svh; }  /* Safari対策 */
-  }
-  @supports (height: 100dvh) {
-    #app.fullscreen iframe { height: 100dvh; }  /* 新標準：実画面高 */
-  }
-
-  /* 全画面時は親UIを消す */
-  .app-mode #topMenu,
-  .app-mode .hero,
-  .app-mode footer { display: none !important; }
-
-  /* ---- 読み込みオーバーレイ ---- */
-  .overlay {
-    position: fixed; inset: 0; z-index: 20;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    background: rgba(0,0,0,.35);
-    color: #fff; text-align: center;
-  }
-  .spinner {
-    width: 48px; height: 48px;
-    border: 4px solid #fff; border-top-color: transparent;
-    border-radius: 50%; animation: spin 1s linear infinite;
-    margin-bottom: .75rem;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* 追加・修正 */
-  #app { position: relative; }
   
-  /* 読み込み中は iframe を薄暗く */
-  #app.loading iframe {
-    filter: brightness(0.6);
-    transition: filter .2s ease;
-  }
-  
-  /* アプリ内オーバーレイ（フルスクリーン時に使う） */
-  #inlineOverlay {
-    position: absolute;
-    inset: 0;
-    z-index: 30;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,.35);
-    color: #fff;
-    text-align: center;
-  }
-  #inlineOverlay.show { display: flex; }
-  /* iframeの初期背景を親と合わせる：白チラ回避 */
-  #frame {
-    background: #231816; /* 親の背景色に合わせる。透明でもOKだが子ページが白指定だと負ける */
-    will-change: opacity;
-    transition: opacity .18s ease-out;
-    opacity: 1;
-  }
-  
-  /* 読み替え中は薄くする（完全に非表示にしない） */
-  #frame.is-fading {
-    opacity: .01; /* 0にすると合成レイヤ落ち→白チラ要因になる端末がある */
-  }
-  
-  /* オーバーレイは遅延で出す。すぐ出すと“チラ見え”の原因 */
-  #overlay.hidden { display: none; }
-  #gasFrame {
-    width: 100%;
-    height: 100%;
-    border: 0;
-    display: block;
-  }
-  /* 🔹 ログインボタンのラッパを小さく固定 */
-  #google-login-container {
-    display: inline-block;
-    margin: 0.5rem;
-    position: absolute;
-    top: 0.5rem;
-    right: 0rem;
-  }
-  /* コンテナ基準に絶対配置できるように */
-  #wrap { position: relative; }
-  
-  /* スマホ：画面の右上に固定（コンテナ無視） */
-  @media (max-width: 767.98px) {
-    #google-login-container{
-      position: fixed;
-      top: max(8px, env(safe-area-inset-top));
-      right: max(8px, env(safe-area-inset-right));
-      margin: 0;
-      z-index: 1000; /* 常に前面 */
-    }
-  }
-  
-  /* PC：コンテナの右端に揃える＋ロゴとほぼ水平 */
-  @media (min-width: 768px) {
-    #google-login-container {
-      position: absolute;
-      top: 0.5rem;
-      right: 0;
-    }
-  }
-  
-  /* 子画面フルスクリーン中はボタン非表示（被り防止） */
-  .app-mode #google-login-container { display: none !important; }
-
-  
-</style>
 </head>
 <body>
   <div id="wrap" class="container container-narrow py-0">
@@ -191,10 +34,8 @@
     </div>
     <!-- ヘッダー（親UI） -->
     <div class="hero">
-      <img src="https://raw.githubusercontent.com/WataruNakayama1203/misemaru-cloud-assets/main/luxury-barber-logo-design.png"
-          alt="店舗 ロゴ"
-          style="max-width: 100%; height: auto; display: block; margin-left: auto; margin-right: auto;" />
-    </div>
+      <img class="hero-img" src="https://raw.githubusercontent.com/WataruNakayama1203/misemaru-cloud-assets/main/luxury-barber-logo-design.png"
+          alt="店舗 ロゴ" /></div>
 
     <!-- 親のトップメニュー -->
     <div id="topMenu" class="d-grid gap-3">
@@ -223,7 +64,7 @@
       <div class="overlay-msg">ページ読み込み中…</div>
     </div>
   
-    <footer class="text-center" style="margin-top: 1rem; font-size: 0.9rem;">
+    <footer class="site-footer text-center">
       &copy; 2025 みせまるクラウド. All rights reserved.
     </footer>
   </div>

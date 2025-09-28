@@ -1,0 +1,151 @@
+/* =============== MiseMaru Common (theme-agnostic) ===============
+   This stylesheet expects theme variables to be defined by a theme file.
+   Override tokens in theme-*.css.
+================================================================= */
+
+/* ---- Tokens (defaults are conservative; themes should override) ---- */
+:root{
+  --bg-color: #231816;
+  --text-color: #efefef;
+  --modal-text-color: #231816;
+  --full-screen-bg: var(--bg-color);
+  --frame-bg: var(--bg-color);
+
+  --btn-text-color: #231816; /* base text on buttons */
+  --btn-hover-bg: #333333;   /* hover background */
+  /* accents */
+  --btn-red:   #f87171;
+  --btn-green: #4ade80;
+  --btn-blue:  #38bdf8;
+  --btn-gray:  #6b7280;
+}
+
+/* ---- Base ---- */
+html, body{
+  margin:0; padding:0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  height:auto;
+  min-height:100dvh;
+  overscroll-behavior-y:none;
+}
+#wrap{ min-height:100%; display:flex; flex-direction:column; position:relative; }
+#topMenu{ margin-bottom:1rem; }
+
+/* iframe region */
+#app{ flex:1; position:relative; }
+.modal-content{ color: var(--modal-text-color) !important; }
+
+/* Utilities */
+.hidden{ display:none !important; }
+.invisible{ visibility:hidden !important; }
+
+/* Buttons */
+.btn-red, .btn-green, .btn-blue, .btn-gray{
+  color: var(--btn-text-color);
+  border:none; transition:.2s;
+}
+.btn-red   { background: var(--btn-red); }
+.btn-green { background: var(--btn-green); }
+.btn-blue  { background: var(--btn-blue); }
+.btn-gray  { background: var(--btn-gray); }
+
+.btn-red:hover   { background: var(--btn-hover-bg); color: var(--btn-red);   border:2px solid var(--btn-red); }
+.btn-green:hover { background: var(--btn-hover-bg); color: var(--btn-green); border:2px solid var(--btn-green); }
+.btn-blue:hover  { background: var(--btn-hover-bg); color: var(--btn-blue);  border:2px solid var(--btn-blue); }
+.btn-gray:hover  { background: var(--btn-hover-bg); color: var(--btn-gray);  border:2px solid var(--btn-gray); }
+
+.btn-lg small{ font-size:.9rem; }
+
+/* Logo */
+.hero-img{
+  display:block; margin:1rem auto;
+  height:60px;
+  max-width:100%; height:auto;
+}
+
+/* ---- Child fullscreen mode ---- */
+.app-mode{ overflow:hidden; }
+#app.fullscreen{
+  position:fixed; inset:0; z-index:10;
+  background: var(--full-screen-bg);
+}
+#app.fullscreen iframe{
+  width:100vw; height:100vh;
+  display:block; border:0;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+@supports (height:100svh){
+  #app.fullscreen iframe{ height:100svh; }
+}
+@supports (height:100dvh){
+  #app.fullscreen iframe{ height:100dvh; }
+}
+
+/* Hide parent UI in fullscreen */
+.app-mode #topMenu,
+.app-mode .hero,
+.app-mode footer{ display:none !important; }
+
+/* ---- Loading Overlay ---- */
+.overlay{
+  position:fixed; inset:0; z-index:20;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  background: rgba(0,0,0,.35);
+  color:#fff; text-align:center;
+}
+.spinner{
+  width:48px; height:48px;
+  border:4px solid #fff; border-top-color:transparent;
+  border-radius:50%; animation: spin 1s linear infinite;
+  margin-bottom:.75rem;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* Dim iframe while loading */
+#app.loading iframe{
+  filter:brightness(0.6);
+  transition:filter .2s ease;
+}
+
+/* Inline overlay used in fullscreen */
+#inlineOverlay{
+  position:absolute; inset:0; z-index:30;
+  display:none;
+  align-items:center; justify-content:center;
+  background: rgba(0,0,0,.35);
+  color:#fff; text-align:center;
+}
+#inlineOverlay.show{ display:flex; }
+
+/* Iframe + frame defaults */
+#gasFrame{ width:100%; height:100%; border:0; display:block; }
+#frame{
+  background: var(--frame-bg);
+  will-change:opacity; transition:opacity .18s ease-out; opacity:1;
+}
+#frame.is-fading{ opacity:.01; }
+#overlay.hidden{ display:none; }
+
+/* Google login button wrapper */
+#google-login-container{
+  display:inline-block; margin:.5rem;
+  position:absolute; top:.5rem; right:0;
+}
+@media (max-width: 767.98px){
+  #google-login-container{
+    position:fixed;
+    top:max(8px, env(safe-area-inset-top));
+    right:max(8px, env(safe-area-inset-right));
+    margin:0; z-index:1000;
+  }
+}
+@media (min-width:768px){
+  #google-login-container{ position:absolute; top:.5rem; right:0; }
+}
+.app-mode #google-login-container{ display:none !important; }
+
+/* Footer */
+.site-footer{ margin-top:1rem; font-size:.9rem; }
