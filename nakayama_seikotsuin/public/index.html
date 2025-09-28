@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="css/misemaru-common.css" />
   <link rel="stylesheet" href="css/theme-customer.css" />
 
+  <!-- Public runtime config (GSI client_id, GAS base URL) -->
+  <script src="config.js"></script>
+
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   
@@ -16,13 +19,6 @@
   <div id="wrap" class="container container-narrow py-0">
     <!-- Google Sign-In ボタン用ラッパ -->
     <div id="google-login-container">
-      <div id="g_id_onload"
-           data-client_id="982431897942-epgcq6gn01c19oormn1q8d8gh6csvr54.apps.googleusercontent.com"
-           data-context="signin"
-           data-callback="onSignIn"
-           data-auto_prompt="false"
-           data-use_fedcm_for_prompt="true">
-      </div>
       <div class="g_id_signin mb-2"
            data-type="standard"
            data-shape="rectangular"
@@ -134,7 +130,7 @@ function refreshGsiButton() {
   // 再初期化して描画
   if (window.google?.accounts?.id) {
     window.google.accounts.id.initialize({
-      client_id: "982431897942-epgcq6gn01c19oormn1q8d8gh6csvr54.apps.googleusercontent.com",
+      client_id: (window.MISEMARU && window.MISEMARU.GSI_CLIENT_ID) || "",
       callback: onSignIn,
       use_fedcm_for_prompt: true,
     });
@@ -312,7 +308,7 @@ function restoreLoginState() {
     hardResetToIndex();
   }
 
-  const GAS_BASE = "https://script.google.com/macros/s/AKfycbwW1ELjbBf1AAwr5H6HPsG-IgQXGOD7RBYhvbmmjCCUQBBbLzD1vmF9KYuVJ4j2zw/exec?key=ZDNhYWMzNGItMmU1OC00YTA2LTk4ZDctZmFlN2JhZGZhODg3";
+  const GAS_BASE = (window.MISEMARU && window.MISEMARU.GAS_BASE) || "";
 
   // ★ これが“index（親）のベースURL）”。?page を一切含まないURLに正規化
   const BASE_URL = (() => {
@@ -324,6 +320,13 @@ function restoreLoginState() {
 
    window.addEventListener('DOMContentLoaded', () => {
     if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: (window.MISEMARU && window.MISEMARU.GSI_CLIENT_ID) || "",
+          callback: onSignIn,
+          use_fedcm_for_prompt: true,
+        });
+      } catch(_) {}
       google.accounts.id.prompt((notification) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
           console.log("[LOGIN] サイレントログインなし");
@@ -500,7 +503,7 @@ function showLoginPrompt() {
 
   if (window.google?.accounts?.id) {
     window.google.accounts.id.initialize({
-      client_id: "982431897942-epgcq6gn01c19oormn1q8d8gh6csvr54.apps.googleusercontent.com",
+      client_id: (window.MISEMARU && window.MISEMARU.GSI_CLIENT_ID) || "",
       callback: onSignIn,
       use_fedcm_for_prompt: true,
     });
