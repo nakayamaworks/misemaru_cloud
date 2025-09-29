@@ -8,5 +8,5 @@ window.MISEMARU = window.MISEMARU || {};
 window.MISEMARU.GSI_CLIENT_ID = "982431897942-epgcq6gn01c19oormn1q8d8gh6csvr54.apps.googleusercontent.com";
 
 // GAS Web App base (exec) URL
-window.MISEMARU.GAS_BASE = "https://script.google.com/macros/s/AKfycbzflPes8donhN5QppufgeFJ386_R0rvX3GGUe-0ZVuNexYSsXygJ5wCPV57EPgzplE/exec";
+window.MISEMARU.GAS_BASE = "https://script.google.com/macros/s/AKfycbyHtFw5pTkHu-Kf-OjIUIs4GbjiELVYngH0HTDWQaUB2sPrmEHqoY6Y2RltM3cIdA/exec";
 
