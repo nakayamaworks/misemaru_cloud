@@ -644,8 +644,7 @@ function navigateTo(page, push = true, params = {}) {
 }
 
 // ========= 設定 =========
-// テナントごとにトップへ戻すURL（GitHub Pages等）。未設定なら index に戻す
-const HOME_URL = "https://watarunakayama1203.github.io/misemaru-public/";
+// テナントのURLは config.js で定義（HOME_URL / ADMIN_URL）
 
 // 受け付ける送信元
 const ALLOWED_ORIGINS = ["https://script.google.com"];
