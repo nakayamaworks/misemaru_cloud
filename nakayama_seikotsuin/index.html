@@ -735,12 +735,12 @@ window.addEventListener("message", (e) => {
   }
 
   if (d.type === "misemaru:close") {
-    if (HOME_URL) location.href = HOME_URL;
+    if (window.HOME_URL) location.href = window.HOME_URL;
     else hardResetToIndex();
     return;
   }
   if (d.type === "misemaru:admin-close") {
-    if (ADMIN_URL) location.href = ADMIN_URL;
+    if (window.ADMIN_URL) location.href = window.ADMIN_URL;
     else hardResetToIndex();
     return;
   }
