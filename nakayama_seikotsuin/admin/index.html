@@ -250,14 +250,13 @@ function forceReLogin() {
     sessionStorage.removeItem("idToken");
     sessionStorage.removeItem("userEmail");
   } catch(e) {}
-  refreshGsiButton();
-
-  // モーダルを表示（Bootstrap 5）
-  const modalEl = document.getElementById("sessionExpiredModal");
-  if (modalEl) {
-    const modal = new bootstrap.Modal(modalEl);
-    modal.show();
-  }
+  // 次回ロード時にインラインの再ログイン案内とセッション切れメッセージを出す
+  try {
+    sessionStorage.setItem("showSessionExpired", "1");
+    sessionStorage.setItem("showLoginBanner", "1");
+  } catch(e) {}
+  // 親(index)のURLに正規化（?page を除去）
+  location.replace(BASE_URL);
 }
 
 function onSignIn(response) {
@@ -402,9 +401,18 @@ function restoreLoginState() {
 
    window.addEventListener('DOMContentLoaded', () => {
     // 先にバナー表示（index単体でも動く）
+    const hero = document.querySelector(".hero");
+    if (sessionStorage.getItem("showSessionExpired")) {
+      sessionStorage.removeItem("showSessionExpired");
+      if (hero) {
+        const exp = document.createElement("div");
+        exp.className = "text-center my-1";
+        exp.innerHTML = `<p class="text-danger fw-bold">ログインセッションが切れました。再度ログインしてください</p>`;
+        hero.insertAdjacentElement("afterend", exp);
+      }
+    }
     if (sessionStorage.getItem("showLoginBanner")) {
       sessionStorage.removeItem("showLoginBanner");
-      const hero = document.querySelector(".hero");
       if (hero) {
         const prompt = document.createElement("div");
         prompt.className = "text-center my-1";
