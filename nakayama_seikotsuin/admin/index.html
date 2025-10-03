@@ -35,16 +35,16 @@
 
     <!-- 親のトップメニュー -->
     <div id="topMenu" class="d-grid gap-3">
-      <button class="btn btn-red btn-lg"   onclick="navigateTo('31_availability_staff')">
+      <button class="btn btn-red btn-lg"   onclick="navigateTo(PAGES.availability.staff)">
         📅 予約管理<br><small>予約を確認・追加・変更できます</small>
       </button>
-      <button class="btn btn-green btn-lg" onclick="navigateTo('41_staff_main_admin')">
+      <button class="btn btn-green btn-lg" onclick="navigateTo(PAGES.staff.main)">
         👥 スタッフ管理<br><small>スタッフの出勤シフトや予定を管理できます</small>
       </button>
-      <button class="btn btn-blue btn-lg"  onclick="navigateTo('51_customer_register_staff')">
+      <button class="btn btn-blue btn-lg"  onclick="navigateTo(PAGES.customer.register)">
         📇 顧客管理<br><small>顧客情報を登録・編集・削除できます</small>
       </button>
-      <button class="btn btn-gray btn-lg"  onclick="navigateTo('61_setting_main')">
+      <button class="btn btn-gray btn-lg"  onclick="navigateTo(PAGES.settings.main)">
         🏪 店舗設定<br><small>店舗情報や営業時間・休業日を設定できます</small>
       </button>
     </div>
@@ -391,6 +391,61 @@ function restoreLoginState() {
 
   const GAS_BASE = (window.MISEMARU && window.MISEMARU.GAS_BASE) || "";
 
+  // ====== ページIDの一元管理（安定ID → 実ページ名） ======
+  window.PAGES = Object.freeze({
+    availability: Object.freeze({
+      staff: 'availability.staff',
+      old:   'availability.staff.old',
+    }),
+    reservation: Object.freeze({
+      main:    'reservation.main',
+      confirm: 'reservation.confirm',
+    }),
+    staff: Object.freeze({
+      main:     'staff.main',
+      register: 'staff.register',
+      shift:    'staff.shift',
+      schedule: 'staff.schedule',
+    }),
+    customer: Object.freeze({
+      register: 'customer.register',
+    }),
+    settings: Object.freeze({
+      main:    'settings.main',
+      basic:   'settings.basic',
+      hours:   'settings.hours',
+      holiday: 'settings.holiday',
+      cancel:  'settings.cancel',
+      service: 'settings.service',
+    }),
+  });
+
+  window.PAGE_ROUTES = Object.freeze({
+    'availability.staff':     '31_availability_staff',
+    'availability.staff.old': '31_old_availability_staff',
+    'reservation.main':       '32_reservation',
+    'reservation.confirm':    '33_confirm',
+    'staff.main':             '41_staff_main_admin',
+    'staff.register':         '42_staff_register_admin',
+    'staff.shift':            '43_staff_shift_admin',
+    'staff.schedule':         '44_staff_schedule_admin',
+    'customer.register':      '51_customer_register_staff',
+    'settings.main':          '61_setting_main',
+    'settings.basic':         '62_setting_basic_admin',
+    'settings.hours':         '63_setting_bussiness_hours_admin',
+    'settings.holiday':       '64_setting_holiday_admin',
+    'settings.cancel':        '66_setting_cancel_admin',
+    'settings.service':       '67_setting_service_admin',
+  });
+
+  function resolvePageId(idOrLegacy) {
+    const key = String(idOrLegacy || '');
+    if (window.PAGE_ROUTES && Object.prototype.hasOwnProperty.call(window.PAGE_ROUTES, key)) {
+      return window.PAGE_ROUTES[key];
+    }
+    return key; // 既存の "31_..." などはそのまま返す
+  }
+
   // ★ これが“index（親）のベースURL）”。?page を一切含まないURLに正規化
   const BASE_URL = (() => {
     const u = new URL(location.href);
@@ -404,12 +459,13 @@ function restoreLoginState() {
     const hero = document.querySelector(".hero");
     if (sessionStorage.getItem("showSessionExpired")) {
       sessionStorage.removeItem("showSessionExpired");
-      if (hero) {
-        const exp = document.createElement("div");
-        exp.className = "text-center my-1";
-        exp.innerHTML = `<p class="text-danger fw-bold">ログインセッションが切れました。再度ログインしてください</p>`;
-        hero.insertAdjacentElement("afterend", exp);
-      }
+      const modalEl = document.getElementById("sessionExpiredModal");
+      try {
+        if (modalEl && window.bootstrap?.Modal) {
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+        }
+      } catch (_) {}
     }
     if (sessionStorage.getItem("showLoginBanner")) {
       sessionStorage.removeItem("showLoginBanner");
@@ -523,6 +579,7 @@ function showInlineLoginPrompt() {
 // ====== ページ遷移処理 ======
 function navigateTo(page, push = true, params = {}) {
   if (!page) { hardResetToIndex(); return; }
+  const pageName = resolvePageId(page);
 
   // まず email を一元取得（window → sessionStorage の順）
   const email = window.userEmail || sessionStorage.getItem("userEmail") || "";
@@ -534,9 +591,9 @@ function navigateTo(page, push = true, params = {}) {
 
   const current = pageFromLocation();
   const currentFrame = framePage();
-  if (current === page && currentFrame === page && app.classList.contains("fullscreen")) return;
+  if (current === pageName && currentFrame === pageName && app.classList.contains("fullscreen")) return;
 
-  const nextUrl = urlFor(page, params);
+  const nextUrl = urlFor(pageName, params);
   navSeq++; const mySeq = navSeq;
 
   const wasFullscreen = app.classList.contains("fullscreen");
@@ -595,7 +652,7 @@ function navigateTo(page, push = true, params = {}) {
   requestAnimationFrame(() => {
     console.log("[PARENT] setFrameUrlReplace:", nextUrl);
     try {
-      const payload = { type: "misemaru-email", email, page };
+      const payload = { type: "misemaru-email", email, page: pageName };
       gasFrameEl.name = JSON.stringify(payload);
       gasFrameEl.setAttribute("name", gasFrameEl.name);
       console.log("[PARENT] gasFrameEl.name セット:", gasFrameEl.name);
@@ -607,7 +664,7 @@ function navigateTo(page, push = true, params = {}) {
 
   if (push) {
     const u = new URL(location.href);
-    u.searchParams.set("page", page);
+    u.searchParams.set("page", pageName);
     for (const [k, v] of Object.entries(params)) {
       if (v != null && v !== "") u.searchParams.set(k, String(v));
       else u.searchParams.delete(k);
