@@ -2,7 +2,7 @@
 // Languages: ja, en, zh-CN, zh-TW
 window.I18N = {
   ja: {
-    language_label: "言語",
+    language_label: "🌐 Language",
     btn_calendar_title: "📅 予約カレンダー",
     btn_calendar_sub: "新規予約はこちらから",
     btn_confirm_title: "✔ 予約確認",
@@ -14,7 +14,7 @@ window.I18N = {
     login_prompt: "Googleアカウントでログインしてください"
   },
   en: {
-    language_label: "Language",
+    language_label: "🌐 Language",
     btn_calendar_title: "📅 Reservation Calendar",
     btn_calendar_sub: "Start a new reservation",
     btn_confirm_title: "✔ Reservation Status",
@@ -26,7 +26,7 @@ window.I18N = {
     login_prompt: "Sign in with your Google Account"
   },
   "zh-CN": {
-    language_label: "语言",
+    language_label: "🌐 Language",
     btn_calendar_title: "📅 预约日历",
     btn_calendar_sub: "从这里开始预约",
     btn_confirm_title: "✔ 预约确认",
@@ -38,7 +38,7 @@ window.I18N = {
     login_prompt: "请使用 Google 账号登录"
   },
   "zh-TW": {
-    language_label: "語言",
+    language_label: "🌐 Language",
     btn_calendar_title: "📅 預約行事曆",
     btn_calendar_sub: "從這裡開始預約",
     btn_confirm_title: "✔ 預約確認",
@@ -50,4 +50,3 @@ window.I18N = {
     login_prompt: "請使用 Google 帳戶登入"
   }
 };
-
