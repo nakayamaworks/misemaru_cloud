@@ -721,8 +721,11 @@ window.addEventListener("message", (e) => {
     }
     if (!page) page = pageFromLocation() || "";
 
-    console.log("[PARENT] child-ready 受信:", { email, hasToken: !!idToken, page });
-    e.source.postMessage({ type: "misemaru:email", email, idToken, page }, e.origin);
+    // 言語を明示的に渡す
+    let lang = 'ja';
+    try { lang = (window.I18nClient && window.I18nClient.getLang && window.I18nClient.getLang()) || (new URL(location.href)).searchParams.get('lang') || 'ja'; } catch(_){ }
+    console.log("[PARENT] child-ready 受信:", { email, hasToken: !!idToken, page, lang });
+    e.source.postMessage({ type: "misemaru:email", email, idToken, page, lang }, e.origin);
     return;
   }
 
@@ -731,8 +734,10 @@ window.addEventListener("message", (e) => {
     const email   = window.userEmail || sessionStorage.getItem("userEmail") || "";
     const idToken = getIdToken();
     const page    = framePage() || pageFromLocation() || "";
-    console.log("[PARENT] request-email 受信:", { email, hasToken: !!idToken, page });
-    e.source.postMessage({ type: "misemaru:email", email, idToken, page }, e.origin);
+    let lang = 'ja';
+    try { lang = (window.I18nClient && window.I18nClient.getLang && window.I18nClient.getLang()) || (new URL(location.href)).searchParams.get('lang') || 'ja'; } catch(_){ }
+    console.log("[PARENT] request-email 受信:", { email, hasToken: !!idToken, page, lang });
+    e.source.postMessage({ type: "misemaru:email", email, idToken, page, lang }, e.origin);
     return;
   }
 
