@@ -11,12 +11,25 @@
   <!-- Public runtime config (GSI client_id, GAS base URL) -->
   <script src="config.js"></script>
 
+  <!-- i18n dictionaries and helper -->
+  <script src="i18n.js"></script>
+  <script src="i18n-client.js"></script>
+
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   
 </head>
 <body>
   <div id="wrap" class="container container-narrow py-0">
+    <div class="d-flex justify-content-end align-items-center mt-2 mb-2" id="langbar">
+      <label for="langSel" id="lang-label" class="me-2">言語</label>
+      <select id="langSel" class="form-select form-select-sm" style="width:auto">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+        <option value="zh-CN">简体中文</option>
+        <option value="zh-TW">繁體中文</option>
+      </select>
+    </div>
     <!-- Google Sign-In ボタン用ラッパ -->
     <div id="google-login-container">
       <div class="g_id_signin mb-2"
@@ -36,10 +49,12 @@
     <!-- 親のトップメニュー -->
     <div id="topMenu" class="d-grid gap-3">
       <button class="btn btn-red btn-lg"   onclick="navigateTo('32_reservation')">
-        📅 予約カレンダー<br><small>新規予約はこちらから</small>
+        <span id="btn-calendar-title">📅 予約カレンダー</span><br>
+        <small id="btn-calendar-sub">新規予約はこちらから</small>
       </button>
       <button class="btn btn-green btn-lg" onclick="navigateTo('33_confirm')">
-        ✔ 予約確認<br><small>予約の確認や変更・キャンセルはこちらから</small>
+        <span id="btn-confirm-title">✔ 予約確認</span><br>
+        <small id="btn-confirm-sub">予約の確認や変更・キャンセルはこちらから</small>
       </button>
     </div>
 
@@ -50,14 +65,14 @@
 
       <div id="inlineOverlay" class="">
         <div class="spinner"></div>
-        <div class="overlay-msg">ページ読み込み中…</div>
+        <div class="overlay-msg" id="inline-overlay-msg">ページ読み込み中…</div>
       </div>
     </div>
 
     <!-- 🔶 読み込みオーバーレイ -->
     <div id="overlay" class="overlay hidden" aria-hidden="true">
       <div class="spinner"></div>
-      <div class="overlay-msg">ページ読み込み中…</div>
+      <div class="overlay-msg" id="full-overlay-msg">ページ読み込み中…</div>
     </div>
   
     <footer class="site-footer text-center">
@@ -70,13 +85,13 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">ログインセッションが切れました</h5>
+          <h5 class="modal-title" id="sessionExpiredTitle">ログインセッションが切れました</h5>
         </div>
         <div class="modal-body">
-          <p>再度ログインしてください。</p>
+          <p id="sessionExpiredBody">再度ログインしてください。</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary" onclick="startGoogleLogin()">OK</button>
+          <button type="button" class="btn btn-primary" id="sessionExpiredOk" onclick="startGoogleLogin()">OK</button>
         </div>
       </div>
     </div>
@@ -563,6 +578,12 @@ function navigateTo(page, push = true, params = {}) {
   const currentFrame = framePage();
   if (current === page && currentFrame === page && app.classList.contains("fullscreen")) return;
 
+  // attach lang automatically
+  try {
+    const L = window.I18nClient?.getLang?.() || (new URL(location.href)).searchParams.get('lang') || 'ja';
+    if (!params.lang) params.lang = L;
+  } catch {}
+
   const nextUrl = urlFor(page, params);
   navSeq++; const mySeq = navSeq;
 
@@ -804,6 +825,26 @@ window.addEventListener("popstate", () => {
     showParentUI();
   }
 });
+</script>
+<script>
+  (function () {
+    try {
+      const L = window.I18nClient?.getLang?.() || 'ja';
+      window.I18nClient?.initSelector?.(document.getElementById('langSel'));
+      window.I18nClient?.apply?.({
+        '#lang-label': 'language_label',
+        '#btn-calendar-title': 'btn_calendar_title',
+        '#btn-calendar-sub': 'btn_calendar_sub',
+        '#btn-confirm-title': 'btn_confirm_title',
+        '#btn-confirm-sub': 'btn_confirm_sub',
+        '#inline-overlay-msg': 'loading',
+        '#full-overlay-msg': 'loading',
+        '#sessionExpiredTitle': 'login_session_expired',
+        '#sessionExpiredBody': 'login_session_expired_body',
+        '#sessionExpiredOk': 'login_ok'
+      }, L);
+    } catch (e) { console.warn('[i18n] init failed', e); }
+  })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
