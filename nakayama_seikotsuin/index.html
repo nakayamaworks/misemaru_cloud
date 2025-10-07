@@ -38,7 +38,7 @@
           alt="店舗 ロゴ" /></div>
 
     <!-- 言語セレクタをヒーロー直下に配置 -->
-    <div class="d-flex justify-content-end align-items-center my-3" id="langbar">
+    <div class="d-flex justify-content-end align-items-center mb-3" id="langbar">
       <label for="langSel" id="lang-label" class="me-2">言語</label>
       <select id="langSel" class="form-select form-select-sm" style="width:auto">
         <option value="ja">日本語</option>
@@ -369,7 +369,14 @@ function restoreLoginState() {
       if (hero) {
         const prompt = document.createElement("div");
         prompt.className = "text-center my-1";
-        prompt.innerHTML = `<p class="text-danger fw-bold">Googleアカウントでログインしてください</p>`;
+        try {
+          const msg = (window.I18nClient && typeof window.I18nClient.t === 'function')
+            ? window.I18nClient.t('login_prompt')
+            : 'Googleアカウントでログインしてください';
+          prompt.innerHTML = `<p class=\"text-danger fw-bold\">${msg}</p>`;
+        } catch(_) {
+          prompt.innerHTML = `<p class=\"text-danger fw-bold\">Googleアカウントでログインしてください</p>`;
+        }
         hero.insertAdjacentElement("afterend", prompt);
       }
     }
