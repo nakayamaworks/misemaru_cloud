@@ -522,10 +522,20 @@ function showLoginPrompt() {
   const container = document.createElement("div");
   container.id = "google-login-container";
   container.className = "text-center my-4";
-  container.innerHTML = `
-    <p class="mb-3">Googleアカウントでログインしてください</p>
-    <div id="login-btn"></div>
-  `;
+  try {
+    const loginMsg = (window.I18nClient && typeof window.I18nClient.t === 'function')
+      ? window.I18nClient.t('login_prompt')
+      : 'Googleアカウントでログインしてください';
+    container.innerHTML = `
+      <p class="mb-3 text-danger">${loginMsg}</p>
+      <div id="login-btn"></div>
+    `;
+  } catch (_) {
+    container.innerHTML = `
+      <p class="mb-3 text-danger">Googleアカウントでログインしてください</p>
+      <div id="login-btn"></div>
+    `;
+  }
   heroElem.insertAdjacentElement("afterend", container);
 
   if (window.google?.accounts?.id) {

@@ -1,4 +1,4 @@
-// Public runtime config for GitHub Pages
+    // Public runtime config for GitHub Pages
 // Note: client_id is not a secret; it is safe to expose on the client.
 //       Ensure server-side (GAS) verifies ID tokens (aud/iss/exp/email).
 
