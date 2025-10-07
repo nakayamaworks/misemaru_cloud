@@ -14,3 +14,9 @@ window.MISEMARU.GAS_BASE = "https://script.google.com/macros/s/AKfycbyHtFw5pTkHu
 // Use var to expose as global identifiers for existing code paths
 var HOME_URL = "https://nakayamaworks.github.io/misemaru_cloud/nakayama_seikotsuin/";
 var ADMIN_URL = "https://nakayamaworks.github.io/misemaru_cloud/nakayama_seikotsuin/admin";
+
+// Language configuration per tenant (client-side only)
+// Default initial language for first-time visitors
+window.MISEMARU.DEFAULT_LANG = window.MISEMARU.DEFAULT_LANG || 'ja';
+// Available languages to show in the selector
+window.MISEMARU.AVAILABLE_LANGS = window.MISEMARU.AVAILABLE_LANGS || ['ja','en','zh-CN','zh-TW'];

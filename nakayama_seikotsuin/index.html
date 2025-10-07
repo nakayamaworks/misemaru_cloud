@@ -874,8 +874,44 @@ window.addEventListener("popstate", () => {
 <script>
   (function () {
     try {
-      const L = window.I18nClient?.getLang?.() || 'ja';
-      window.I18nClient?.initSelector?.(document.getElementById('langSel'));
+      const sel = document.getElementById('langSel');
+      const cfg = window.MISEMARU || {};
+      const available = Array.isArray(cfg.AVAILABLE_LANGS) && cfg.AVAILABLE_LANGS.length
+        ? cfg.AVAILABLE_LANGS
+        : ['ja','en','zh-CN','zh-TW'];
+      const defaultLang = (typeof cfg.DEFAULT_LANG === 'string' && cfg.DEFAULT_LANG) ? cfg.DEFAULT_LANG : 'ja';
+
+      // Filter selector options to available list
+      if (sel) {
+        const map = {
+          'ja': '日本語',
+          'en': 'English',
+          'zh-CN': '简体中文',
+          'zh-TW': '繁體中文'
+        };
+        // Rebuild options for deterministic order by available
+        sel.innerHTML = '';
+        available.forEach(code => {
+          if (!map[code]) return;
+          const opt = document.createElement('option');
+          opt.value = code;
+          opt.textContent = map[code];
+          sel.appendChild(opt);
+        });
+      }
+
+      // Decide initial language without overriding explicit user choice
+      const urlLang = new URL(location.href).searchParams.get('lang');
+      let L = urlLang || localStorage.getItem('lang') || defaultLang;
+      if (!available.includes(L)) L = defaultLang;
+
+      // Persist first-time default only if nothing chosen
+      if (!urlLang && !localStorage.getItem('lang')) {
+        try { localStorage.setItem('lang', L); } catch {}
+      }
+
+      if (sel) sel.value = L;
+      window.I18nClient?.initSelector?.(sel);
       window.I18nClient?.apply?.({
         '#lang-label': 'language_label',
         '#btn-calendar-title': 'btn_calendar_title',
