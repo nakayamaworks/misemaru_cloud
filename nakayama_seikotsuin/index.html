@@ -107,6 +107,18 @@
     if (window.userEmail) console.log("[LOGIN] restored from sessionStorage:", window.userEmail);
   } catch (e) { /* no-op */ }
 
+  // 現在ログイン済みか簡易チェック（sessionStorage の有効期限も考慮）
+  function hasValidSession() {
+    try {
+      const raw = sessionStorage.getItem("gsiAuth");
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s?.email && s?.idToken && s?.exp * 1000 > Date.now()) return true;
+      }
+    } catch (_) {}
+    return !!(window.userEmail);
+  }
+
    // --- Base64URL → JSON デコード共通 ---
   function decodeBase64Url(b64url) {
     if (!b64url || typeof b64url !== "string") return "";
@@ -299,6 +311,10 @@ function onSignIn(response) {
   console.log("✅ Logged in as:", email);
   handleAccountSwitch(email);
 
+  // サインイン完了後は One Tap を閉じる/自動選択を抑止
+  try { window.google?.accounts?.id?.cancel?.(); } catch(_) {}
+  try { window.google?.accounts?.id?.disableAutoSelect?.(); } catch(_) {}
+
   const q = _afterSignInQueue.splice(0);
   q.forEach(fn => { try { fn?.(); } catch(e) { console.warn(e); } });
 
@@ -353,11 +369,16 @@ function restoreLoginState() {
           use_fedcm_for_prompt: true,
         });
       } catch(_) {}
-      window.google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          console.log("[LOGIN] サイレントログインなし");
-        }
-      });
+      if (!hasValidSession()) {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.log("[LOGIN] サイレントログインなし");
+          }
+        });
+      } else {
+        try { window.google.accounts.id.cancel?.(); } catch(_) {}
+        try { window.google.accounts.id.disableAutoSelect?.(); } catch(_) {}
+      }
       refreshGsiButton();
     });
   
