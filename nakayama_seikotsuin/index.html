@@ -418,11 +418,12 @@ function restoreLoginState() {
   });
 
 
-  const frame   = document.getElementById("gasFrame");
-  const app     = document.getElementById("app");
-  const overlay = document.getElementById("overlay"); // あれば使う
+const frame   = document.getElementById("gasFrame");
+const app     = document.getElementById("app");
+const overlay = document.getElementById("overlay"); // あれば使う
 
-  let navSeq = 0;
+let navSeq = 0;
+let currentGuestMode = false;
 
   const pageFromLocation = () => {
     const u = new URL(location.href);
@@ -448,6 +449,7 @@ function restoreLoginState() {
     }
     if (frame) frame.classList.add("invisible");
     if (overlay) overlay.classList.add("hidden");
+    currentGuestMode = false;
     location.replace(BASE_URL);
   }
 
@@ -608,11 +610,26 @@ function navigateTo(page, push = true, params = {}) {
 
   // まず email を一元取得（window → sessionStorage の順）
   const email = window.userEmail || sessionStorage.getItem("userEmail") || "";
+  const isReservationPage = page === '32_reservation' || page === (window.PAGES?.reservation?.main || '') || page === 'reservation.main';
+  let guestMode = false;
+
   if (!email) {
-    console.warn("[PARENT] navigateTo: 未ログイン → ナビゲーション中断", { page, push, params });
-    showInlineLoginPrompt();
-    return;
+    if (isReservationPage) {
+      guestMode = true;
+      params = { ...params, guest: '1' };
+      console.info('[PARENT] navigateTo: ゲストモードで予約ページへ遷移', { page, push, params });
+    } else {
+      console.warn("[PARENT] navigateTo: 未ログイン → ナビゲーション中断", { page, push, params });
+      showInlineLoginPrompt();
+      return;
+    }
+  } else if (params?.guest) {
+    // ログイン済みなら guest パラメータは除去
+    const { guest, ...rest } = params;
+    params = rest;
   }
+
+  currentGuestMode = guestMode;
 
   const current = pageFromLocation();
   const currentFrame = framePage();
@@ -683,7 +700,7 @@ function navigateTo(page, push = true, params = {}) {
   requestAnimationFrame(() => {
     console.log("[PARENT] setFrameUrlReplace:", nextUrl);
     try {
-      const payload = { type: "misemaru-email", email, page };
+      const payload = { type: "misemaru-email", email, page, guest: guestMode };
       frame.name = JSON.stringify(payload);
       frame.setAttribute("name", frame.name);
       console.log("[PARENT] frame.name セット:", frame.name);
@@ -762,8 +779,9 @@ window.addEventListener("message", (e) => {
     // 言語を明示的に渡す
     let lang = 'ja';
     try { lang = (window.I18nClient && window.I18nClient.getLang && window.I18nClient.getLang()) || (new URL(location.href)).searchParams.get('lang') || 'ja'; } catch(_){ }
-    console.log("[PARENT] child-ready 受信:", { email, hasToken: !!idToken, page, lang });
-    e.source.postMessage({ type: "misemaru:email", email, idToken, page, lang }, e.origin);
+    const guest = currentGuestMode && (!email || !idToken);
+    console.log("[PARENT] child-ready 受信:", { email, hasToken: !!idToken, page, lang, guest });
+    e.source.postMessage({ type: "misemaru:email", email, idToken, page, lang, guest }, e.origin);
     return;
   }
 
@@ -774,8 +792,9 @@ window.addEventListener("message", (e) => {
     const page    = framePage() || pageFromLocation() || "";
     let lang = 'ja';
     try { lang = (window.I18nClient && window.I18nClient.getLang && window.I18nClient.getLang()) || (new URL(location.href)).searchParams.get('lang') || 'ja'; } catch(_){ }
-    console.log("[PARENT] request-email 受信:", { email, hasToken: !!idToken, page, lang });
-    e.source.postMessage({ type: "misemaru:email", email, idToken, page, lang }, e.origin);
+    const guest = currentGuestMode && (!email || !idToken);
+    console.log("[PARENT] request-email 受信:", { email, hasToken: !!idToken, page, lang, guest });
+    e.source.postMessage({ type: "misemaru:email", email, idToken, page, lang, guest }, e.origin);
     return;
   }
 
@@ -797,6 +816,13 @@ window.addEventListener("message", (e) => {
       }
       return;
     }
+    return;
+  }
+
+  if (d.type === "misemaru:guest-login") {
+    currentGuestMode = false;
+    try { showParentUI(); } catch (_) {}
+    showInlineLoginPrompt();
     return;
   }
 
