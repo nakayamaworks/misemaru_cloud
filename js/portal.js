@@ -67,7 +67,7 @@ const DICT = {
     createPageTitle: "店舗開設ガイド",
     createPageLead: "みせまるクラウドに店舗を登録するための準備〜公開手順をまとめました。",
 
-    createStepSpreadsheet: "スプレッドシートのコピー",
+    createStepAppsScript: "Apps Script プロジェクトの立ち上げ",
     createStepDeploy: "GAS をウェブアプリとしてデプロイし、URL を控えます。",
     createStepRegistry: "店舗情報を運営へ送信し、認証を申請します。",
     
@@ -150,7 +150,7 @@ const DICT = {
     createPageTitle: "Store Onboarding Guide",
     createPageLead: "Follow this checklist to prepare, deploy, and verify your Misemaru Cloud store.",
 
-    createStepSpreadsheet: "Copy the Spreadsheet",
+    createStepAppsScript: "Launch the Apps Script project",
     createStepDeploy: "Deploy the GAS web app and keep its URL.",
     createStepRegistry: "Send your store info to Misemaru Cloud for verification.",
 
@@ -233,7 +233,7 @@ const DICT = {
     createPageTitle: "门店上线指南",
     createPageLead: "按照以下步骤准备、部署并完成 Misemaru Cloud 门店认证。",
 
-    createStepSpreadsheet: "复制电子表格",
+    createStepAppsScript: "启动 Apps Script 项目",
     createStepDeploy: "将 GAS 部署为网络应用并保存其 URL。",
     createStepRegistry: "将门店信息发送给 Misemaru Cloud 以完成验证。",
 
@@ -312,7 +312,7 @@ const DICT = {
     createPageTitle: "Guía de incorporación de tiendas",
     createPageLead: "Sigue estos pasos para preparar, desplegar y verificar tu tienda Misemaru Cloud.",
 
-    createStepSpreadsheet: "Copiar hoja de cálculo",
+    createStepAppsScript: "Iniciar el proyecto de Apps Script",
     createStepDeploy: "Despliega la app web de GAS y guarda su URL.",
     createStepRegistry: "Envía la información de tu tienda a Misemaru Cloud para su verificación.",
 
@@ -391,7 +391,8 @@ const DICT = {
     //create
     createPageTitle: "매장 개설 가이드",
     createPageLead: "다음 단계를 따라 Misemaru Cloud 매장을 준비하고 배포하며 인증하세요.",
-    createStepSpreadsheet: "스프레드시트 복사",
+
+    createStepAppsScript: "Apps Script 프로젝트 시작",
     createStepDeploy: "GAS를 웹 앱으로 배포하고 URL을 기록합니다.",
     createStepRegistry: "매장 정보를 Misemaru Cloud로 보내 인증을 요청합니다.",
 
