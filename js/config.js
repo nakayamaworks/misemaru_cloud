@@ -58,3 +58,8 @@ window.MISEMARU.MOCK_REGISTRY = window.MISEMARU.MOCK_REGISTRY || [
     tags: ["barber", "tokyo"]
   }
 ];
+
+//共有スプレッドシートURL
+window.CONFIG = {
+  TEMPLATE_SHEET_URL: "https://docs.google.com/spreadsheets/d/18pB_XbUSMKB-4sje3sYEnNWCU5ynXJOwgUU_9IsuKS4/edit?usp=sharing",
+};
