@@ -29,10 +29,15 @@ const DICT = {
     gasIdLabel: "Web App URL",
     gasIdPlaceholder: "例: https://script.google.com/macros/s/AKfycbwXXXXXXXXXXXXXXX/exec",
     verifyButton: "店舗を確認",
+
     createStoreTitle: "店舗を開設する",
     createStoreDescription: "予約サイトの立ち上げと、みせまるクラウドへの登録認証を行います。",
+    createStoreButton: "店舗開設ガイドへ",
+
     browseStoresTitle: "認証済み店舗を探す",
     browseStoresDescription: "国・サービスカテゴリから公開中の店舗一覧を参照できます。",
+    browseStoresButton: "店舗一覧を見る",
+
     featuresTitle: "今後追加予定の機能",
     featureMap: "世界地図での店舗検索（Google Maps API 連携）",
     featureReviews: "お客様レビューの公開・翻訳表示",
@@ -104,10 +109,15 @@ const DICT = {
     gasIdLabel: "Store Web App URL",
     gasIdPlaceholder: "Example: https://script.google.com/macros/s/AKfycbwXXXXXXXXXXXXXXX/exec",
     verifyButton: "Check store",
+
     createStoreTitle: "Create a store",
     createStoreDescription: "Launch your booking site and complete Misemaru Cloud registration.",
+    createStoreButton: "Open setup guide",
+
     browseStoresTitle: "Explore verified stores",
     browseStoresDescription: "Browse the public directory by country or service category.",
+    browseStoresButton: "View directory",
+
     featuresTitle: "Roadmap highlights",
     featureMap: "Interactive map with Google Maps integration",
     featureReviews: "Translated customer reviews for verified stores",
@@ -179,10 +189,15 @@ const DICT = {
     gasIdLabel: "Web App 地址",
     gasIdPlaceholder: "示例：https://script.google.com/macros/s/AKfycbwXXXXXXXXXXXXXXX/exec",
     verifyButton: "确认门店",
+
     createStoreTitle: "创建门店",
     createStoreDescription: "上线预约网站并完成 Misemaru Cloud 注册认证。",
+    createStoreButton: "查看上线指引",
+
     browseStoresTitle: "浏览已认证门店",
     browseStoresDescription: "按国家或服务类别查看公开的门店列表。",
+    browseStoresButton: "查看门店列表",
+
     featuresTitle: "即将上线的功能",
     featureMap: "结合 Google Maps 的全球门店地图",
     featureReviews: "已认证门店的客户评价与翻译",
@@ -248,10 +263,15 @@ const DICT = {
     gasIdLabel: "URL de la App Web",
     gasIdPlaceholder: "Ejemplo: https://script.google.com/macros/s/AKfycbwXXXXXXXXXXXXXXX/exec",
     verifyButton: "Verificar tienda",
+
     createStoreTitle: "Crear una tienda",
     createStoreDescription: "Lanza tu sitio de reservas y completa la verificación de Misemaru Cloud.",
+    createStoreButton: "Ir a la guía",
+
     browseStoresTitle: "Explorar tiendas verificadas",
     browseStoresDescription: "Consulta el directorio público por país o categoría de servicio.",
+    browseStoresButton: "Ver directorio",
+
     featuresTitle: "Funciones en el roadmap",
     featureMap: "Mapa interactivo con integración de Google Maps",
     featureReviews: "Reseñas de clientes traducidas para tiendas verificadas",
@@ -315,6 +335,21 @@ const DICT = {
     gasIdLabel: "웹 앱 URL",
     gasIdPlaceholder: "예: https://script.google.com/macros/s/AKfycbwXXXXXXXXXXXXXXX/exec",
     verifyButton: "매장 확인",
+
+    createStoreTitle: "매장 개설하기",
+    createStoreDescription: "예약 사이트를 열고 Misemaru Cloud 등록 인증을 진행합니다.",
+    createStoreButton: "개설 가이드 보기",
+
+    browseStoresTitle: "인증된 매장 둘러보기",
+    browseStoresDescription: "국가 또는 서비스 카테고리별로 공개 매장을 확인하세요.",
+    browseStoresButton: "매장 목록 보기",
+
+    featuresTitle: "향후 제공 예정 기능",
+    featureMap: "Google Maps 연동 글로벌 매장 지도",
+    featureReviews: "인증 매장 고객 리뷰 및 번역 표시",
+    featureDonate: "“Misemaru Cloud 지원” 글로벌 후원 버튼",
+    featureLanguageAuto: "브라우저 언어 자동 감지 및 추천",
+    featureAdmin: "매장 인증용 경량 관리자 대시보드",
 
     //stores
     storesPageTitle: "인증된 매장 목록",
