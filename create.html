@@ -63,6 +63,17 @@
       background: rgba(37, 99, 235, .08);
       color: #1d4ed8;
     }
+    .template-gallery img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      border-bottom: 1px solid #eee;
+    }
+    .sheet-link.disabled {
+      background: #ccc !important;
+      pointer-events: none;
+      color: #fff !important;
+    }
   </style>
 </head>
 <body>
@@ -78,6 +89,68 @@
       <p class="lead text-muted" data-i18n="createPageLead">Follow this checklist to prepare, deploy, and verify your Misemaru Cloud store.</p>
     </header>
 
+    <!-- === テンプレート選択セクション === -->
+    <section class="template-gallery mb-5">
+      <h2 class="mb-3 fw-bold" data-i18n="templateGalleryTitle">テンプレートを選ぶ</h2>
+      <p class="text-muted" data-i18n="templateGalleryLead">
+        以下からお好きなテンプレートを選んで、スプレッドシートをコピーしてください。
+      </p>
+
+      <div class="row g-4">
+        <!-- 無料テンプレート -->
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="card h-100 shadow-sm border-0">
+            <img src="img/template_free.jpg" class="card-img-top rounded-top" alt="Free Template Preview">
+            <div class="card-body text-center">
+              <h5 class="card-title text-success fw-bold" data-i18n="templateFree">無料テンプレート</h5>
+              <a id="templateLink" class="sheet-link" href="#" target="_blank" data-i18n="openTemplate">📄 Open Template</a>
+                スプレッドシートを開く
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 有償テンプレート1 -->
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="card h-100 shadow-sm border-0">
+            <img src="img/template_premium1.jpg" class="card-img-top rounded-top" alt="Premium Template 1 Preview">
+            <div class="card-body text-center">
+              <h5 class="card-title text-warning fw-bold" data-i18n="templatePremium1">有償テンプレート #1</h5>
+              <a href="#" class="sheet-link d-block mt-2 disabled" style="background:#ccc;pointer-events:none;" data-i18n="templateComingSoon">
+                🔒 準備中
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 有償テンプレート2 -->
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="card h-100 shadow-sm border-0">
+            <img src="img/template_premium2.jpg" class="card-img-top rounded-top" alt="Premium Template 2 Preview">
+            <div class="card-body text-center">
+              <h5 class="card-title text-warning fw-bold" data-i18n="templatePremium2">有償テンプレート #2</h5>
+              <a href="#" class="sheet-link d-block mt-2 disabled" style="background:#ccc;pointer-events:none;" data-i18n="templateComingSoon">
+                🔒 準備中
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 有償テンプレート3 -->
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="card h-100 shadow-sm border-0">
+            <img src="img/template_premium3.jpg" class="card-img-top rounded-top" alt="Premium Template 3 Preview">
+            <div class="card-body text-center">
+              <h5 class="card-title text-warning fw-bold" data-i18n="templatePremium3">有償テンプレート #3</h5>
+              <a href="#" class="sheet-link d-block mt-2 disabled" style="background:#ccc;pointer-events:none;" data-i18n="templateComingSoon">
+                🔒 準備中
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ステップ1 -->
     <section class="guide-card card">
       <div class="card-body p-4">
@@ -90,7 +163,6 @@
           <li data-i18n="copyStep3">A linked Apps Script project will be created automatically once the copy is made.</li>
           <p class="text-muted small" data-i18n="copyStep3_note"></p>
         </ul>
-        <a id="templateLink" class="sheet-link" href="#" target="_blank" data-i18n="openTemplate">📄 Open Template</a>
       </div>
     </section>
 

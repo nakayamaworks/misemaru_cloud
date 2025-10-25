@@ -67,6 +67,14 @@ const DICT = {
     createPageTitle: "店舗開設ガイド",
     createPageLead: "みせまるクラウドに店舗を登録するための準備〜公開手順をまとめました。",
 
+    templateGalleryTitle: "テンプレートを選ぶ",
+    templateGalleryLead: "以下からお好きなテンプレートを選んで、スプレッドシートをコピーしてください。",
+    templateFree: "無料テンプレート",
+    templatePremium1: "有償テンプレート #1",
+    templatePremium2: "有償テンプレート #2",
+    templatePremium3: "有償テンプレート #3",
+    templateComingSoon: "🔒 準備中",
+
     createStepAppsScript: "Apps Script プロジェクトの立ち上げ",
     createStepDeploy: "GAS をウェブアプリとしてデプロイし、URL を控えます。",
     createStepRegistry: "店舗情報を運営へ送信し、認証を申請します。",
@@ -149,6 +157,14 @@ const DICT = {
     // create
     createPageTitle: "Store Onboarding Guide",
     createPageLead: "Follow this checklist to prepare, deploy, and verify your Misemaru Cloud store.",
+
+    templateGalleryTitle: "Choose a Template",
+    templateGalleryLead: "Select your preferred template below and make a copy of the spreadsheet.",
+    templateFree: "Free Template",
+    templatePremium1: "Premium Template #1",
+    templatePremium2: "Premium Template #2",
+    templatePremium3: "Premium Template #3",
+    templateComingSoon: "🔒 Coming Soon",
 
     createStepAppsScript: "Launch the Apps Script project",
     createStepDeploy: "Deploy the GAS web app and keep its URL.",
@@ -233,6 +249,14 @@ const DICT = {
     createPageTitle: "门店上线指南",
     createPageLead: "按照以下步骤准备、部署并完成 Misemaru Cloud 门店认证。",
 
+    templateGalleryTitle: "选择模板",
+    templateGalleryLead: "从下方选择您喜欢的模板，然后复制电子表格。",
+    templateFree: "免费模板",
+    templatePremium1: "付费模板 #1",
+    templatePremium2: "付费模板 #2",
+    templatePremium3: "付费模板 #3",
+    templateComingSoon: "🔒 敬请期待",
+
     createStepAppsScript: "启动 Apps Script 项目",
     createStepDeploy: "将 GAS 部署为网络应用并保存其 URL。",
     createStepRegistry: "将门店信息发送给 Misemaru Cloud 以完成验证。",
@@ -311,6 +335,14 @@ const DICT = {
     storesError: "No se pudo cargar el directorio. Inténtalo más tarde.",
     createPageTitle: "Guía de incorporación de tiendas",
     createPageLead: "Sigue estos pasos para preparar, desplegar y verificar tu tienda Misemaru Cloud.",
+
+    templateGalleryTitle: "Elige una plantilla",
+    templateGalleryLead: "Selecciona tu plantilla preferida a continuación y haz una copia de la hoja de cálculo.",
+    templateFree: "Plantilla gratuita",
+    templatePremium1: "Plantilla premium #1",
+    templatePremium2: "Plantilla premium #2",
+    templatePremium3: "Plantilla premium #3",
+    templateComingSoon: "🔒 Próximamente",
 
     createStepAppsScript: "Iniciar el proyecto de Apps Script",
     createStepDeploy: "Despliega la app web de GAS y guarda su URL.",
@@ -391,6 +423,14 @@ const DICT = {
     //create
     createPageTitle: "매장 개설 가이드",
     createPageLead: "다음 단계를 따라 Misemaru Cloud 매장을 준비하고 배포하며 인증하세요.",
+
+    templateGalleryTitle: "템플릿 선택",
+    templateGalleryLead: "아래에서 원하는 템플릿을 선택하고 스프레드시트를 복사하세요.",
+    templateFree: "무료 템플릿",
+    templatePremium1: "유료 템플릿 #1",
+    templatePremium2: "유료 템플릿 #2",
+    templatePremium3: "유료 템플릿 #3",
+    templateComingSoon: "🔒 준비 중",
 
     createStepAppsScript: "Apps Script 프로젝트 시작",
     createStepDeploy: "GAS를 웹 앱으로 배포하고 URL을 기록합니다.",
