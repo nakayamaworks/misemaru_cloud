@@ -181,7 +181,9 @@
     select.addEventListener("change", e => applyLanguage(e.target.value));
 
     // 初期適用
-    applyLanguage(currentLang);
+    document.addEventListener("DOMContentLoaded", () => {
+      applyLanguage(currentLang);
+    });
 
     // テンプレートリンク設定
     document.addEventListener("DOMContentLoaded", () => {
