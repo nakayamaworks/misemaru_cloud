@@ -71,12 +71,12 @@ const DICT = {
     createStepDeploy: "GAS をウェブアプリとしてデプロイし、URL を控えます。",
     createStepRegistry: "店舗情報を運営へ送信し、認証を申請します。",
     
-    copyStep1: "「スプレッドシートを開く」ボタンをクリック。開いたスプレッドシートの「ファイル」→「コピーを作成」をクリックします。",
+    copyStep1: "「スプレッドシートを開く」ボタンをクリックし、開いたスプレッドシートの「ファイル」→「コピーを作成」をクリックします。",
     copyStep1_note: "ここであなたの Google アカウントのドライブ内に「みせまるクラウド」のテンプレートがコピーされます。",
-    copyStep2: "ポップアップ（Copy document）で、何も変更せずそのまま「Make a copy」をクリックします。",
-    copyStep2_note: "「Share it with the same people」にチェックは必ず外したままにしてください（顧客情報が漏洩する可能性があります）。",
+    copyStep2: "ポップアップ（ドキュメントをコピー）で、何も変更せずそのまま「コピーを作成」をクリックします。",
+    copyStep2_note: "「同じユーザーと共有する」にチェックは必ず外したままにしてください（顧客情報が漏洩する可能性があります）。",
     copyStep3: "コピーされたスプレッドシートが開いた後、「拡張機能」→「Apps Script」をクリックします。",
-    copyStep3_note: "Apps Script 画面が表示されたら①は完了です。",
+    copyStep3_note: "Apps Script 画面が表示されたら②に進んでください。",
     openTemplate: "📄 スプレッドシートを開く",
 
     timezoneTitle: "タイムゾーンを設定する",
@@ -154,12 +154,12 @@ const DICT = {
     createStepDeploy: "Deploy the GAS web app and keep its URL.",
     createStepRegistry: "Send your store info to Misemaru Cloud for verification.",
 
-    copyStep1: "Click the “Open Spreadsheet” button, then choose “File → Make a copy”.",
+    copyStep1: "Click the “Open Spreadsheet” button, then select “File → Make a copy”.",
     copyStep1_note: "This will copy the Misemaru Cloud template into your Google Drive.",
-    copyStep2: "In the “Copy document” window, click “Make a copy” without changing anything.",
-    copyStep2_note: "Make sure “Share it with the same people” remains unchecked to protect customer data.",
-    copyStep3: "After your copy opens, go to “Extensions → Apps Script”.",
-    copyStep3_note: "Once the Apps Script editor appears, Step ① is complete.",
+    copyStep2: "In the “Copy document” popup, click “Make a copy” without changing anything.",
+    copyStep2_note: "Make sure to leave “Share it with the same people” unchecked to prevent any customer data leakage.",
+    copyStep3: "After the copied spreadsheet opens, click “Extensions → Apps Script”.",
+    copyStep3_note: "Once the Apps Script editor appears, proceed to Step ②.",
     openTemplate: "📄 Open Spreadsheet",
 
     timezoneTitle: "Set your timezone",
@@ -237,12 +237,12 @@ const DICT = {
     createStepDeploy: "将 GAS 部署为网络应用并保存其 URL。",
     createStepRegistry: "将门店信息发送给 Misemaru Cloud 以完成验证。",
 
-    copyStep1: "点击“打开电子表格”按钮，在页面中选择“文件 → 创建副本”。",
-    copyStep1_note: "这将在您的 Google 云端硬盘中复制一份 Misemaru Cloud 模板。",
+    copyStep1: "点击“打开电子表格”按钮，然后在页面中选择“文件 → 创建副本”。",
+    copyStep1_note: "此操作将在您的 Google 云端硬盘中复制一份 Misemaru Cloud 模板。",
     copyStep2: "在弹出的“复制文档”窗口中，不做任何更改，直接点击“创建副本”。",
-    copyStep2_note: "请确保“与相同人员共享”未勾选，以防止客户数据泄露。",
-    copyStep3: "复制完成后，在打开的电子表格中点击“扩展功能 → Apps Script”。",
-    copyStep3_note: "当出现 Apps Script 页面时，步骤①即完成。",
+    copyStep2_note: "请务必保持“与相同人员共享”未选中，以防止客户数据泄露。",
+    copyStep3: "复制完成后，打开的电子表格中点击“扩展功能 → Apps Script”。",
+    copyStep3_note: "出现 Apps Script 页面后，请继续进行步骤②。",
     openTemplate: "📄 打开电子表格",
 
 
@@ -318,10 +318,10 @@ const DICT = {
 
     copyStep1: "Haz clic en “Abrir hoja de cálculo” y luego selecciona “Archivo → Hacer una copia”.",
     copyStep1_note: "Esto creará una copia de la plantilla Misemaru Cloud en tu Google Drive.",
-    copyStep2: "En la ventana “Copiar documento”, haz clic en “Hacer una copia” sin modificar nada.",
-    copyStep2_note: "Asegúrate de dejar desmarcada la opción “Compartir con las mismas personas” para proteger los datos de los clientes.",
-    copyStep3: "Después de abrir la copia, haz clic en “Extensiones → Apps Script”.",
-    copyStep3_note: "Cuando aparezca el editor de Apps Script, el paso ① estará completo.",
+    copyStep2: "En la ventana emergente “Copiar documento”, haz clic en “Hacer una copia” sin modificar nada.",
+    copyStep2_note: "Asegúrate de dejar desmarcada la opción “Compartir con las mismas personas” para evitar fugas de datos de clientes.",
+    copyStep3: "Después de abrir la hoja copiada, haz clic en “Extensiones → Apps Script”.",
+    copyStep3_note: "Cuando se abra el editor de Apps Script, continúa con el paso ②.",
     openTemplate: "📄 Abrir hoja de cálculo",
 
     timezoneTitle: "Configura tu zona horaria",
@@ -397,10 +397,10 @@ const DICT = {
 
     copyStep1: "‘스프레드시트 열기’ 버튼을 클릭하고, 열린 시트에서 ‘파일 → 사본 만들기’를 선택합니다.",
     copyStep1_note: "이 작업으로 사용자의 Google 드라이브에 Misemaru Cloud 템플릿이 복사됩니다.",
-    copyStep2: "팝업창(‘Copy document’)에서 아무것도 변경하지 않고 ‘사본 만들기’를 클릭합니다.",
-    copyStep2_note: "‘Share it with the same people’은 반드시 체크 해제 상태로 유지하세요. 고객 정보가 유출될 수 있습니다.",
-    copyStep3: "복사된 시트가 열리면 ‘확장 프로그램 → Apps Script’를 클릭합니다.",
-    copyStep3_note: "Apps Script 화면이 표시되면 ① 단계가 완료됩니다.",
+    copyStep2: "팝업창(‘문서 복사’)에서 아무것도 변경하지 않고 ‘사본 만들기’를 클릭합니다.",
+    copyStep2_note: "‘같은 사용자와 공유’ 항목은 반드시 체크 해제 상태로 유지하세요. 고객 정보가 유출될 수 있습니다.",
+    copyStep3: "복사된 시트가 열리면 상단 메뉴의 ‘확장 프로그램 → Apps Script’를 클릭합니다.",
+    copyStep3_note: "Apps Script 화면이 표시되면 ② 단계로 진행하세요.",
     openTemplate: "📄 스프레드시트 열기",
 
     timezoneTitle: "시간대 설정",
