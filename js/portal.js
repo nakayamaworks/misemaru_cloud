@@ -1,7 +1,3 @@
-if (typeof window !== "undefined") {
-  window.DICT = DICT;
-}
-
 const SUPPORTED_LANGS = [
   { code: "ja", label: "日本語" },
   { code: "en", label: "English" },
@@ -2784,3 +2780,7 @@ function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
+if (typeof window !== "undefined") {
+  window.DICT = DICT;
+}
