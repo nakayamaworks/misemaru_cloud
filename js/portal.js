@@ -1,3 +1,7 @@
+if (typeof window !== "undefined") {
+  window.DICT = DICT;
+}
+
 const SUPPORTED_LANGS = [
   { code: "ja", label: "日本語" },
   { code: "en", label: "English" },
